@@ -1,0 +1,13 @@
+import React, { useEffect, useState } from 'react';
+import StatCard from '../components/StatCard';
+
+export default function PortfolioPage({ onOpenProject }) {
+  const [data, setData] = useState(null); const [loading, setLoading] = useState(true); const [error, setError] = useState('');
+  const refresh = async () => { setLoading(true); setError(''); try { const r = await fetch(`${(import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '')}/api/portfolio`); const j = await r.json(); if (!r.ok) throw new Error(j.detail || 'Portfolio request failed'); setData(j); } catch(e) { setError(e.message); } finally { setLoading(false); } };
+  useEffect(() => { refresh(); }, []);
+  return <div className="page-stack"><section className="page-intro-row"><div><div className="eyebrow">CROSS-PROJECT INTELLIGENCE</div><h2>Portfolio intelligence</h2><p>Compare project risks, delayed tasks and forecast slips using current database records.</p></div><button className="button button-secondary" onClick={refresh} disabled={loading}>{loading ? 'Refreshing…' : '↻ Refresh portfolio'}</button></section>
+    {error && <div className="error-banner">{error}</div>}
+    {data && <><section className="stats-grid"><StatCard label="Projects" value={data.count} note="Projects in MySQL" icon="▥" accent="blue"/><StatCard label="High-risk projects" value={data.summary.high_risk_projects} note="Risk score ≥ 70" icon="⚑" accent="rose"/><StatCard label="At-risk tasks" value={data.summary.risk_tasks} note="Delayed, blocked or at risk" icon="↗" accent="amber"/><StatCard label="Forecast slips" value={data.summary.forecast_slips} note="Forecast later than plan" icon="◷" accent="violet"/></section>
+      <section className="panel"><div className="panel-header"><div><h3>Project comparison</h3><p>Each row is calculated from the selected project's stored tasks.</p></div></div><div className="portfolio-list">{data.projects.map(p => <button className="portfolio-row" key={p.id} onClick={() => onOpenProject(p.id)}><div className="portfolio-project"><span className="project-avatar-light">{p.name.slice(0,1)}</span><span><strong>{p.name}</strong><small>{p.id} · Release {p.planned_release}</small></span></div><div className="portfolio-risk"><span>Risk</span><div className="portfolio-meter"><i style={{width:`${Math.max(0,Math.min(100,p.risk_score))}%`}}/></div><strong>{p.risk_score}/100</strong></div><div className="portfolio-metric"><span>At-risk tasks</span><strong>{p.risk_task_count}</strong></div><div className="portfolio-metric"><span>Forecast slips</span><strong>{p.forecast_slips}</strong></div><span className="portfolio-status">{p.status}</span></button>)}</div></section></>}
+  </div>;
+}
