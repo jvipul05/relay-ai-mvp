@@ -13,9 +13,46 @@ import PortfolioPage from './pages/PortfolioPage';
 import RagChatPage from './pages/RagChatPage';
 import DependencyMapPage from './pages/DependencyMapPage';
 import DataSourcesPage from './pages/DataSourcesPage';
+import LoginPage from './pages/LoginPage';
 import './styles.css';
 
+const GUEST_SESSION_KEY = 'relay_demo_access';
+
 export default function App() {
+  const [demoAccessGranted, setDemoAccessGranted] = useState(() => {
+    try {
+      return window.sessionStorage.getItem(GUEST_SESSION_KEY) === 'guest';
+    } catch {
+      return false;
+    }
+  });
+
+  const enterGuestDemo = () => {
+    try {
+      window.sessionStorage.setItem(GUEST_SESSION_KEY, 'guest');
+    } catch {
+      // Keep the current tab usable even if browser storage is unavailable.
+    }
+    setDemoAccessGranted(true);
+  };
+
+  const exitGuestDemo = () => {
+    try {
+      window.sessionStorage.removeItem(GUEST_SESSION_KEY);
+    } catch {
+      // State below still returns the user to the welcome screen.
+    }
+    setDemoAccessGranted(false);
+  };
+
+  if (!demoAccessGranted) {
+    return <LoginPage onContinue={enterGuestDemo} />;
+  }
+
+  return <RelayWorkspace onSignOut={exitGuestDemo} />;
+}
+
+function RelayWorkspace({ onSignOut }) {
   const [projects, setProjects] = useState([]);
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [project, setProject] = useState(null);
@@ -157,7 +194,7 @@ export default function App() {
 
   if (loading) return <div className="app-loading"><LoadingState label="Connecting to Relay workspace…"/></div>;
   return <div className="app-shell">
-    <Sidebar activeView={activeView} onNavigate={setActiveView} projects={projects} selectedProjectId={selectedProjectId} onSelectProject={setSelectedProjectId}/>
+    <Sidebar activeView={activeView} onNavigate={setActiveView} projects={projects} selectedProjectId={selectedProjectId} onSelectProject={setSelectedProjectId} onSignOut={onSignOut}/>
     <main className="main-area"><Topbar activeView={activeView} project={selectedProject} onRefresh={() => loadProjectData(selectedProjectId)} refreshing={refreshing}/>
       <div className="main-content">{error && <div className="error-banner"><span>!</span><div><strong>Something needs attention</strong><p>{error}</p></div><button onClick={() => setError('')} aria-label="Dismiss error">×</button></div>}
         {!projects.length ? <section className="panel"><div className="empty-state"><div className="empty-icon">⌂</div><h3>No projects yet</h3><p>Add a project through the backend seed script or project API. The UI automatically lists projects returned by the server.</p></div></section> : <>
@@ -171,7 +208,7 @@ export default function App() {
           {activeView === 'evidence' && <EvidenceSearchPage project={selectedProject} onSearch={searchEvidence} busy={ragBusy} results={ragResults} searchedQuery={ragQuery} error={ragError}/>}
           {activeView === 'sources' && <DataSourcesPage project={selectedProject} onFetch={fetchSourceRecords} onSync={syncSourceRecords} busySource={sourceBusy} fetchResults={sourceFetchResults} syncResults={sourceSyncResults} errors={sourceErrors}/>} 
         </>}
-        <footer className="app-footer"><span>RELAY · ORGANIZATIONAL INTELLIGENCE</span><span>Local development · Simulated execution</span></footer>
+        <footer className="app-footer"><span>RELAY · ORGANIZATIONAL INTELLIGENCE</span><span>Guest demo workspace · Simulated execution</span></footer>
       </div>
     </main>
     {toast && <div className="toast"><span>✓</span>{toast}</div>}
