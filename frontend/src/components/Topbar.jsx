@@ -8,11 +8,17 @@ const titles = {
   actions: ['Recovery actions', 'Review, approve, and verify proposed actions in one place.'],
   evidence: ['Evidence search', 'Find the project evidence behind Relay’s recommendations.'],
   chat: ['Ask Relay', 'Ask a project question and explore evidence-backed answers.'],
-  sources: ['Connected sources', 'Bring project context together from available sources.'],
+  'relay-studio': ['Relay Studio', 'Turn text, images, and voice notes into a structured proposal.'],
+  sources: ['Connected sources', 'Configure test links, preview connector records, and sync evidence without duplication.'],
   email: ['Email sync', 'Configure project-specific Gmail evidence ingestion.'],
 };
 
-export default function Topbar({ activeView, project, onRefresh, refreshing }) {
+const languages = [
+  'English', 'Hindi', 'Spanish', 'French', 'German',
+  'Portuguese', 'Japanese', 'Korean', 'Arabic', 'Chinese (Simplified)',
+];
+
+export default function Topbar({ activeView, project, onRefresh, refreshing, language = 'English', onLanguageChange }) {
   const [title, subtitle] = titles[activeView] || titles.overview;
   return (
     <header className="topbar">
@@ -23,6 +29,12 @@ export default function Topbar({ activeView, project, onRefresh, refreshing }) {
         <p>{subtitle}</p>
       </div>
       <div className="topbar-actions">
+        <label className="language-picker">
+          <span>AI OUTPUT</span>
+          <select aria-label="AI output language" value={language} onChange={event => onLanguageChange?.(event.target.value)}>
+            {languages.map(item => <option key={item} value={item}>{item}</option>)}
+          </select>
+        </label>
         <span className="environment-pill"><span className="live-dot"/> Guest demo</span>
         <button className="icon-button" type="button" title="Refresh project data" aria-label="Refresh project data" onClick={onRefresh} disabled={refreshing}>{refreshing ? '…' : '↻'}</button>
         <div className="topbar-avatar" title="Guest demo">GD</div>
