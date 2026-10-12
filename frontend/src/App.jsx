@@ -18,6 +18,18 @@ import './styles.css';
 
 const GUEST_SESSION_KEY = 'relay_demo_access';
 
+const MOBILE_NAV_ITEMS = [
+  { id: 'overview', icon: '⌂', label: 'Home' },
+  { id: 'portfolio', icon: '▥', label: 'Portfolio' },
+  { id: 'investigation', icon: '✧', label: 'Investigate' },
+  { id: 'actions', icon: '✓', label: 'Actions' },
+  { id: 'chat', icon: '◌', label: 'Ask Relay' },
+  { id: 'dependencies', icon: '⤳', label: 'Dependencies' },
+  { id: 'evidence', icon: '⌕', label: 'Evidence' },
+  { id: 'sources', icon: '⇄', label: 'Sources' },
+  { id: 'email', icon: '✉', label: 'Email' },
+];
+
 export default function App() {
   const [demoAccessGranted, setDemoAccessGranted] = useState(() => {
     try {
@@ -211,6 +223,21 @@ function RelayWorkspace({ onSignOut }) {
         <footer className="app-footer"><span>RELAY · ORGANIZATIONAL INTELLIGENCE</span><span>Guest demo workspace · Simulated execution</span></footer>
       </div>
     </main>
+    <nav className="mobile-nav" aria-label="Quick navigation">
+      {MOBILE_NAV_ITEMS.map(item => (
+        <button
+          key={item.id}
+          type="button"
+          className={`mobile-nav-item ${activeView === item.id ? 'active' : ''}`}
+          onClick={() => setActiveView(item.id)}
+          aria-current={activeView === item.id ? 'page' : undefined}
+          title={item.label}
+        >
+          <span aria-hidden="true">{item.icon}</span>
+          <small>{item.label}</small>
+        </button>
+      ))}
+    </nav>
     {toast && <div className="toast"><span>✓</span>{toast}</div>}
   </div>;
 }
