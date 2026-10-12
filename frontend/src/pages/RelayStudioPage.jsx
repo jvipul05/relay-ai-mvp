@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { relayApi } from '../api/client';
 
 const DESTINATIONS = [
@@ -90,11 +90,6 @@ export default function RelayStudioPage({ project, language = 'English', onCreat
   const [result, setResult] = useState(null);
   const [saved, setSaved] = useState(false);
 
-  const selectedSchema = useMemo(() => {
-    if (useCustomSchema) return schemaText;
-    return JSON.stringify(TEMPLATE_SCHEMAS[destination] || DEFAULT_SCHEMA, null, 2);
-  }, [useCustomSchema, schemaText, destination]);
-
   const generate = async event => {
     event.preventDefault();
     if (!project?.id || (!inputText.trim() && !file)) {
@@ -183,7 +178,7 @@ export default function RelayStudioPage({ project, language = 'English', onCreat
         <details className="relay-schema-studio">
           <summary><span><strong>Schema Studio</strong><small>Customize the JSON contract without changing backend code.</small></span><span className="relay-schema-toggle-label">{useCustomSchema ? 'Custom schema ON' : 'Using destination template'}</span></summary>
           <label className="relay-checkbox relay-schema-enable"><input type="checkbox" checked={useCustomSchema} onChange={event => setUseCustomSchema(event.target.checked)} /><span><strong>Use my own JSON Schema</strong><small>Object schemas only, maximum 8 KB and four nesting levels. Unsupported schema keywords are rejected before Gemini runs.</small></span></label>
-          <textarea className="relay-schema-editor" value={schemaText} onChange={event => setSchemaText(event.target.value)} rows={12} spellCheck={false} aria-label="Custom JSON Schema" />
+          <textarea className="relay-schema-editor" value={useCustomSchema ? schemaText : JSON.stringify(TEMPLATE_SCHEMAS[destination] || DEFAULT_SCHEMA, null, 2)} onChange={event => setSchemaText(event.target.value)} readOnly={!useCustomSchema} rows={12} spellCheck={false} aria-label="Custom JSON Schema" />
           <div className="relay-schema-actions"><button type="button" className="text-button" onClick={() => setSchemaText(JSON.stringify(TEMPLATE_SCHEMAS[destination] || DEFAULT_SCHEMA, null, 2))}>Load destination template</button><button type="button" className="text-button" onClick={() => setSchemaText(JSON.stringify(DEFAULT_SCHEMA, null, 2))}>Load auto-router schema</button></div>
         </details>
 
