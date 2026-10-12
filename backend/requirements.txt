@@ -4,19 +4,18 @@ SQLAlchemy>=2.0,<3.0
 PyMySQL
 python-dotenv
 pydantic>=2.0
-# Existing Gemini SDK dependency used by Relay's AI/RAG workflow.
+# Gemini structured outputs, image/audio input, and optional Google Search grounding.
 google-genai
+jsonschema>=4.23,<5
+python-multipart>=0.0.20,<1
 # Microsoft 365 OAuth + Graph calls + encrypted token storage + periodic scheduler.
 msal>=1.30,<2
 requests>=2.31,<3
-cryptography>=42
+cryptography>=43,<46
 APScheduler>=3.10,<4
-# Install these alongside the dependencies already used by Relay.
 google-api-python-client>=2.150,<3
 google-auth>=2.35,<3
 google-auth-oauthlib>=1.2,<2
 google-auth-httplib2>=0.2,<1
-cryptography>=43,<46
-APScheduler>=3.10,<4
 # Optional for database schema versioning in a later phase:
 # alembic
