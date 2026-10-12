@@ -12,7 +12,7 @@ const navItems = [
   { id: 'email', icon: '✉', label: 'Email integration' },
 ];
 
-export default function Sidebar({ activeView, onNavigate, projects, selectedProjectId, onSelectProject }) {
+export default function Sidebar({ activeView, onNavigate, projects, selectedProjectId, onSelectProject, onSignOut }) {
   return <aside className="sidebar">
     <div className="brand"><div className="brand-mark">r.</div><div><div className="brand-name">relay</div><div className="brand-caption">ORG INTELLIGENCE</div></div></div>
     <div className="workspace-label">WORKSPACE</div>
@@ -30,6 +30,6 @@ export default function Sidebar({ activeView, onNavigate, projects, selectedProj
         <span className="nav-icon">{item.icon}</span><span>{item.label}</span>{item.id === 'actions' && <span className="nav-arrow">↗</span>}
       </button>)}
     </nav>
-    <div className="sidebar-bottom"><div className="ai-status"><span className="live-dot"/><div><strong>Relay intelligence</strong><small>Ready to investigate</small></div></div><div className="profile"><div className="profile-avatar">VJ</div><div className="profile-meta"><strong>Demo workspace</strong><small>Local environment</small></div><span className="profile-menu">···</span></div></div>
+    <div className="sidebar-bottom"><div className="ai-status"><span className="live-dot"/><div><strong>Relay intelligence</strong><small>Ready to investigate</small></div></div><div className="profile"><div className="profile-avatar">VJ</div><div className="profile-meta"><strong>Demo workspace</strong><small>Local environment</small></div><button className="profile-signout" type="button" onClick={onSignOut} title="Exit guest demo">Exit</button></div></div>
   </aside>;
 }
