@@ -267,13 +267,17 @@ def sync_project(db: Session, project_id: str, max_messages: int = 100) -> dict:
             "messages_skipped": skipped, "failures": failures[:10], "last_sync_at": config.last_sync_at.isoformat() if config.last_sync_at else None}
 
 
-def scheduled_sync_once():
+def scheduled_sync_once() -> dict:
+    """Sync projects that are due; safe for APScheduler or a one-shot Cloud Run Job."""
     db = SessionLocal()
+    summary = {"enabled_projects": 0, "projects_due": 0, "projects_synced": 0, "failures": []}
     try:
         now = datetime.now(timezone.utc)
         configs = db.query(GmailSyncConfig).filter(GmailSyncConfig.enabled.is_(True)).all()
+        summary["enabled_projects"] = len(configs)
         for config in configs:
-            if not db.query(GmailConnection).filter(GmailConnection.project_id == config.project_id).first():
+            connection = db.query(GmailConnection).filter(GmailConnection.project_id == config.project_id).first()
+            if not connection:
                 continue
             due = config.last_sync_at is None
             if config.last_sync_at:
@@ -283,13 +287,27 @@ def scheduled_sync_once():
                 due = now - last >= timedelta(minutes=max(15, min(config.interval_minutes, 1440)))
             if not due:
                 continue
+            summary["projects_due"] += 1
             try:
-                sync_project(db, config.project_id)
+                result = sync_project(db, config.project_id)
+                message_failures = result.get("failures", []) if isinstance(result, dict) else []
+                if message_failures:
+                    summary["failures"].append({
+                        "project_id": config.project_id,
+                        "message": f"{len(message_failures)} email(s) could not be processed",
+                    })
+                else:
+                    summary["projects_synced"] += 1
             except Exception as exc:
                 db.rollback()
                 refreshed = db.query(GmailSyncConfig).filter(GmailSyncConfig.project_id == config.project_id).first()
                 if refreshed:
                     refreshed.last_error = f"{type(exc).__name__}: {str(exc)[:500]}"
                     db.commit()
+                summary["failures"].append({
+                    "project_id": config.project_id,
+                    "error": type(exc).__name__,
+                })
+        return summary
     finally:
         db.close()
