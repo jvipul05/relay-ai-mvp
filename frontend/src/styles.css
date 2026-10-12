@@ -552,3 +552,7 @@
  .relay-review-actions .button{width:100%}
  .relay-json-preview{font-size:9px;padding:13px}
 }
+
+.evidence-origin{display:inline-flex;align-items:center;width:fit-content;padding:3px 6px;border-radius:5px;font-size:8px;font-weight:750;white-space:nowrap}
+.evidence-origin.synthetic{background:#fff4df;color:#a66b14}
+.evidence-origin.connected{background:#e7f7ef;color:#177b58}
