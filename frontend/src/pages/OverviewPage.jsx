@@ -11,6 +11,7 @@ function shortDate(value) {
 export default function OverviewPage({ project, investigation, onNavigate, onRunAi, aiLoading }) {
   const tasks = project?.tasks || [];
   const riskScore = project?.current_risk_score ?? project?.risk_score;
+  const riskRingDegrees = Math.min(100, Math.max(0, Number(riskScore) || 0)) * 3.6;
   const atRiskTasks = tasks.filter(task => ['at risk', 'delayed', 'blocked'].includes(String(task.status).toLowerCase()));
   const delayedTasks = tasks.filter(task => task.forecast_date && task.planned_date && task.forecast_date > task.planned_date);
   const release = shortDate(project?.planned_release);
@@ -49,7 +50,7 @@ export default function OverviewPage({ project, investigation, onNavigate, onRun
         <aside className="mission-signal-card">
           <div className="mission-signal-top"><span className="mission-signal-dot"/> RELAY SIGNAL</div>
           <div className="mission-risk-visual">
-            <div className="mission-risk-ring"><span><strong>{riskScore ?? '—'}</strong><small>/100 risk</small></span></div>
+            <div className="mission-risk-ring" style={{ background: `conic-gradient(#ef8b7b 0deg ${riskRingDegrees}deg, #445576 ${riskRingDegrees}deg 360deg)` }}><span><strong>{riskScore ?? '—'}</strong><small>/100 risk</small></span></div>
             <div><span className="mission-risk-label">Delivery risk</span><strong className="mission-risk-state">{Number(riskScore) >= 70 ? 'Needs attention' : Number(riskScore) >= 40 ? 'Keep watching' : 'In good shape'}</strong><small className="mission-risk-help">Illustrative demo score</small></div>
           </div>
           <div className="mission-risk-track"><span style={{ width: `${Math.max(0, Math.min(100, Number(riskScore) || 0))}%` }}/></div>
