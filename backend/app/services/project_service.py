@@ -38,6 +38,7 @@ def load_project_payload(db: Session, project_id: str) -> dict:
         "id": project.project_id,
         "name": project.name,
         "status": project.status,
+        "is_synthetic": bool(project.is_synthetic),
         "planned_release": project.planned_release.isoformat(),
         "current_risk_score": project.risk_score,
         "tasks": task_payloads,
