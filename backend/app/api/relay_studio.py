@@ -162,7 +162,7 @@ async def preview_relay_payload(
     input_text: str = Form(default="", max_length=12000),
     destination: Literal["auto", "jira", "confluence", "slack"] = Form(default="auto"),
     language: str = Form(default="English", max_length=40),
-    schema_json: str = Form(default=""),
+    schema_text: str = Form(default="", alias="schema_json"),
     use_google_search: bool = Form(default=False),
     file: UploadFile | None = File(default=None),
     db: Session = Depends(get_db),
