@@ -556,3 +556,10 @@
 .evidence-origin{display:inline-flex;align-items:center;width:fit-content;padding:3px 6px;border-radius:5px;font-size:8px;font-weight:750;white-space:nowrap}
 .evidence-origin.synthetic{background:#fff4df;color:#a66b14}
 .evidence-origin.connected{background:#e7f7ef;color:#177b58}
+
+
+/* Explainable recovery options */
+.investigation-option-detail{margin-top:10px;padding:10px 11px;border:1px solid #edf0f6;background:#fafbfe;border-radius:8px}
+.investigation-option-detail b{font-size:9px;letter-spacing:.5px;color:#65738d}
+.investigation-option-detail ul{padding-left:16px;margin:6px 0 0;color:#6d7b92;font-size:10px;line-height:1.7}
+.investigation-approval-note{display:inline-flex;align-items:center;gap:5px;margin-top:9px;background:#fff6e5;color:#9c6a1d;border:1px solid #f4e5c2;border-radius:100px;padding:5px 8px;font-size:8px;font-weight:750}
