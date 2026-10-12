@@ -194,7 +194,7 @@ async def preview_relay_payload(
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
-    schema = _get_schema(destination, schema_json)
+    schema = _get_schema(destination, schema_text)
     schema_for_model = dict(schema)
     schema_for_model["_relay_destination"] = destination
     project_context = {
