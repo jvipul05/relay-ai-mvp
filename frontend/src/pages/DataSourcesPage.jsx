@@ -51,7 +51,8 @@ export default function DataSourcesPage({ project, onFetch, onSync, busySource, 
       const response = await relayApi.saveConnectorConfig(project.id, source, draftUrls[source]);
       setConfigs(current => ({ ...current, [source]: { ...current[source], base_url: response.base_url, mode: response.mode } }));
       setDraftUrls(current => ({ ...current, [source]: response.base_url }));
-      setSavedMessage(source === 'jira' ? 'Jira test link saved.' : 'Confluence test link saved.');
+      setSavedMessage(source === 'jira' ? 'Jira test link saved. Preview refreshed.' : 'Confluence test link saved. Preview refreshed.');
+      await onFetch(source);
     } catch (error) {
       setConfigError(error.message || 'Could not save test URL.');
     } finally {
@@ -110,14 +111,14 @@ export default function DataSourcesPage({ project, onFetch, onSync, busySource, 
                   />
                 </label>
                 <div className="connector-url-footer">
-                  <span>Used to build the preview links below.</span>
+                  <span>{draftUrls[source.id] !== config.base_url ? "Unsaved URL — save it before fetching new preview links." : "Used to build the preview links below."}</span>
                   <button className="button button-secondary" type="button" onClick={() => saveUrl(source.id)} disabled={Boolean(saving)}>{saving === source.id ? 'Saving…' : 'Save test URL'}</button>
                 </div>
                 {config?.base_url && <p className="connector-current-url">Current base: <strong>{config.base_url}</strong></p>}
               </div>
 
               <div className="data-source-actions">
-                <button className="button button-secondary" type="button" onClick={() => onFetch(source.id)} disabled={Boolean(busySource)}>{busy && !data ? 'Fetching…' : 'Fetch preview records'}</button>
+                <button className="button button-secondary" type="button" onClick={() => onFetch(source.id)} disabled={Boolean(busySource) || draftUrls[source.id] !== config.base_url} title={draftUrls[source.id] !== config.base_url ? 'Save the new test URL before fetching' : 'Fetch synthetic preview records'}>{busy && !data ? 'Fetching…' : draftUrls[source.id] !== config.base_url ? 'Save URL to fetch' : 'Fetch preview records'}</button>
                 <button className="button button-primary" type="button" onClick={() => onSync(source.id, selectedIds.length ? selectedIds : null)} disabled={Boolean(busySource) || !records.length}>{busy ? 'Syncing…' : selectedIds.length ? 'Ingest selected (' + selectedIds.length + ')' : 'Sync all into evidence'}</button>
               </div>
 
