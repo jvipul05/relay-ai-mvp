@@ -372,3 +372,18 @@
  .mission-workflow{grid-template-columns:1fr}
  .mission-project-line .status-badge{font-size:8px}
 }
+
+
+/* Mobile More menu: preserve all destinations without a horizontally hidden dock */
+@media(max-width:600px){
+  .mobile-nav{justify-content:space-between;overflow:visible}
+  .mobile-nav-item{flex:1 1 0;min-width:0;padding:3px 1px}
+  .mobile-nav-item small{font-size:7.5px;letter-spacing:-.1px}
+  .mobile-nav-more-wrap{position:relative;display:flex;flex:1 1 0;min-width:0}
+  .mobile-nav-more-wrap>.mobile-nav-item{width:100%}
+  .mobile-more-menu{position:absolute;right:0;bottom:calc(100% + 10px);width:190px;padding:7px;background:rgba(255,255,255,.98);border:1px solid #e2e7f0;border-radius:13px;box-shadow:0 14px 35px rgba(28,43,76,.18);backdrop-filter:blur(18px);display:flex;flex-direction:column;gap:3px}
+  .mobile-more-menu button{display:flex;align-items:center;gap:11px;width:100%;min-height:40px;padding:0 11px;border:0;border-radius:8px;background:transparent;color:#58657e;text-align:left;font-size:10px;font-weight:650}
+  .mobile-more-menu button span{width:20px;text-align:center;font-size:15px;color:#677ce2}
+  .mobile-more-menu button:hover,.mobile-more-menu button.active{background:#eef1ff;color:#4059ca}
+  .mobile-more-menu button:focus-visible{outline:2px solid #8392ef;outline-offset:1px}
+}
