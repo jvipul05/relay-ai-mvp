@@ -24,10 +24,13 @@ const MOBILE_NAV_ITEMS = [
   { id: 'investigation', icon: '✧', label: 'Investigate' },
   { id: 'actions', icon: '✓', label: 'Actions' },
   { id: 'chat', icon: '◌', label: 'Ask Relay' },
-  { id: 'dependencies', icon: '⤳', label: 'Dependencies' },
-  { id: 'evidence', icon: '⌕', label: 'Evidence' },
-  { id: 'sources', icon: '⇄', label: 'Sources' },
-  { id: 'email', icon: '✉', label: 'Email' },
+];
+
+const MOBILE_MORE_ITEMS = [
+  { id: 'dependencies', icon: '⤳', label: 'Dependency map' },
+  { id: 'evidence', icon: '⌕', label: 'Evidence search' },
+  { id: 'sources', icon: '⇄', label: 'Connected sources' },
+  { id: 'email', icon: '✉', label: 'Email sync' },
 ];
 
 export default function App() {
@@ -72,6 +75,7 @@ function RelayWorkspace({ onSignOut }) {
   const [aiResult, setAiResult] = useState(null);
   const [actions, setActions] = useState([]);
   const [activeView, setActiveView] = useState('overview');
+  const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
@@ -229,7 +233,7 @@ function RelayWorkspace({ onSignOut }) {
           key={item.id}
           type="button"
           className={`mobile-nav-item ${activeView === item.id ? 'active' : ''}`}
-          onClick={() => setActiveView(item.id)}
+          onClick={() => { setActiveView(item.id); setMobileMoreOpen(false); }}
           aria-current={activeView === item.id ? 'page' : undefined}
           title={item.label}
         >
@@ -237,6 +241,31 @@ function RelayWorkspace({ onSignOut }) {
           <small>{item.label}</small>
         </button>
       ))}
+      <div className="mobile-nav-more-wrap">
+        <button
+          type="button"
+          className={`mobile-nav-item ${MOBILE_MORE_ITEMS.some(item => item.id === activeView) ? 'active' : ''}`}
+          aria-expanded={mobileMoreOpen}
+          aria-haspopup="true"
+          onClick={() => setMobileMoreOpen(open => !open)}
+          title="More workspace tools"
+        >
+          <span aria-hidden="true">···</span><small>More</small>
+        </button>
+        {mobileMoreOpen && <div className="mobile-more-menu" role="menu" aria-label="More workspace tools">
+          {MOBILE_MORE_ITEMS.map(item => (
+            <button
+              key={item.id}
+              type="button"
+              role="menuitem"
+              className={activeView === item.id ? 'active' : ''}
+              onClick={() => { setActiveView(item.id); setMobileMoreOpen(false); }}
+            >
+              <span aria-hidden="true">{item.icon}</span>{item.label}
+            </button>
+          ))}
+        </div>}
+      </div>
     </nav>
     {toast && <div className="toast"><span>✓</span>{toast}</div>}
   </div>;
