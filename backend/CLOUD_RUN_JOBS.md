@@ -7,13 +7,15 @@ so sync continues independently of web request traffic and scale-to-zero.
 ## One-time setup (PowerShell)
 
 These commands use the existing project, service account and Secret Manager names. They create
-one Cloud Run Job and one Scheduler job; Google Cloud usage can incur charges beyond free quotas.
+one Cloud Run Job and one Scheduler job; Google Cloud usage can incur charges beyond free quotas. The Scheduler API must be enabled first.
 
 ```powershell
 $project = "relay-ai-mvp-vj-2026"
 $region = "asia-south1"
 $service = "relay-backend"
 $runtimeSa = "relay-runner@relay-ai-mvp-vj-2026.iam.gserviceaccount.com"
+gcloud services enable cloudscheduler.googleapis.com --project $project
+
 $backendImage = gcloud run services describe $service --project $project --region $region --format="value(spec.template.spec.containers[0].image)"
 
 if (-not $backendImage) { throw "Could not find the current relay-backend image. Deploy the backend first." }
@@ -37,7 +39,7 @@ gcloud run jobs add-iam-policy-binding relay-sync-job `
   --member "serviceAccount:$runtimeSa" `
   --role roles/run.invoker
 
-$runJobUri = "https://$region-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/$project/jobs/relay-sync-job:run"
+$runJobUri = "https://run.googleapis.com/v2/projects/$project/locations/$region/jobs/relay-sync-job:run"
 
 gcloud scheduler jobs create http relay-sync-every-15-min `
   --project $project `
@@ -46,7 +48,7 @@ gcloud scheduler jobs create http relay-sync-every-15-min `
   --time-zone "UTC" `
   --uri $runJobUri `
   --http-method POST `
-  --oauth-service-account $runtimeSa `
+  --oauth-service-account-email $runtimeSa `
   --message-body "{}" `
   --attempt-deadline 320s
 ```
