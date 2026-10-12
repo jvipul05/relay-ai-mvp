@@ -14,6 +14,7 @@ import RagChatPage from './pages/RagChatPage';
 import DependencyMapPage from './pages/DependencyMapPage';
 import DataSourcesPage from './pages/DataSourcesPage';
 import LoginPage from './pages/LoginPage';
+import RelayStudioPage from './pages/RelayStudioPage';
 import './styles.css';
 
 const GUEST_SESSION_KEY = 'relay_demo_access';
@@ -27,6 +28,7 @@ const MOBILE_NAV_ITEMS = [
 ];
 
 const MOBILE_MORE_ITEMS = [
+  { id: 'relay-studio', icon: '✧', label: 'Relay Studio' },
   { id: 'dependencies', icon: '⤳', label: 'Dependency map' },
   { id: 'evidence', icon: '⌕', label: 'Evidence search' },
   { id: 'sources', icon: '⇄', label: 'Connected sources' },
@@ -75,6 +77,7 @@ function RelayWorkspace({ onSignOut }) {
   const [aiResult, setAiResult] = useState(null);
   const [actions, setActions] = useState([]);
   const [activeView, setActiveView] = useState('overview');
+  const [responseLanguage, setResponseLanguage] = useState('English');
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -168,7 +171,7 @@ function RelayWorkspace({ onSignOut }) {
     catch (err) { setError(err.message || 'Could not disconnect Gmail.'); }
     finally { setGmailBusy(false); }
   };
-  const chatWithRag = async (message, history) => relayApi.chatWithRag(selectedProjectId, message, history);
+  const chatWithRag = async (message, history, language = responseLanguage) => relayApi.chatWithRag(selectedProjectId, message, history, language);
   const fetchSourceRecords = async source => { setSourceBusy(source); setSourceErrors(c=>({...c,[source]:''})); try { const r=await relayApi.getMockIntegrationRecords(selectedProjectId,source); setSourceFetchResults(c=>({...c,[source]:r})); showToast(`${r.count} synthetic ${source} records fetched.`); } catch(e) { setSourceErrors(c=>({...c,[source]:e.message||`Could not fetch ${source} records.`})); } finally { setSourceBusy(''); } };
   const syncSourceRecords = async (source, recordIds=null) => { setSourceBusy(source); setSourceErrors(c=>({...c,[source]:''})); try { const r=await relayApi.syncMockIntegration(selectedProjectId,source,recordIds); setSourceSyncResults(c=>({...c,[source]:r})); await loadProjectData(selectedProjectId,true); showToast(`${source} records indexed into RAG.`); } catch(e) { setSourceErrors(c=>({...c,[source]:e.message||`Could not ingest ${source} records.`})); } finally { setSourceBusy(''); } };
   const searchEvidence = async query => {
@@ -184,7 +187,7 @@ function RelayWorkspace({ onSignOut }) {
   const runAi = async () => {
     if (!selectedProjectId) return;
     setAiLoading(true); setError('');
-    try { const result = await relayApi.runAiInvestigation(selectedProjectId); setAiResult(result); setActiveView('investigation'); showToast('AI investigation completed.'); }
+    try { const result = await relayApi.runAiInvestigation(selectedProjectId, responseLanguage); setAiResult(result); setActiveView('investigation'); showToast('AI investigation completed.'); }
     catch (err) { setError(err.message || 'AI investigation failed.'); }
     finally { setAiLoading(false); }
   };
@@ -211,12 +214,13 @@ function RelayWorkspace({ onSignOut }) {
   if (loading) return <div className="app-loading"><LoadingState label="Connecting to Relay workspace…"/></div>;
   return <div className="app-shell">
     <Sidebar activeView={activeView} onNavigate={setActiveView} projects={projects} selectedProjectId={selectedProjectId} onSelectProject={setSelectedProjectId} onSignOut={onSignOut}/>
-    <main className="main-area"><Topbar activeView={activeView} project={selectedProject} onRefresh={() => loadProjectData(selectedProjectId)} refreshing={refreshing}/>
+    <main className="main-area"><Topbar activeView={activeView} project={selectedProject} onRefresh={() => loadProjectData(selectedProjectId)} refreshing={refreshing} language={responseLanguage} onLanguageChange={setResponseLanguage}/>
       <div className="main-content">{error && <div className="error-banner"><span>!</span><div><strong>Something needs attention</strong><p>{error}</p></div><button onClick={() => setError('')} aria-label="Dismiss error">×</button></div>}
         {!projects.length ? <section className="panel"><div className="empty-state"><div className="empty-icon">⌂</div><h3>No projects yet</h3><p>Add a project through the backend seed script or project API. The UI automatically lists projects returned by the server.</p></div></section> : <>
           {activeView === 'portfolio' && <PortfolioPage onOpenProject={id => { setSelectedProjectId(id); setActiveView('overview'); }}/>}
           {activeView === 'dependencies' && <DependencyMapPage project={project}/>}
-          {activeView === 'chat' && <RagChatPage project={selectedProject} onChat={chatWithRag}/>}
+          {activeView === 'chat' && <RagChatPage project={selectedProject} onChat={chatWithRag} language={responseLanguage}/>}
+          {activeView === 'relay-studio' && <RelayStudioPage project={selectedProject} language={responseLanguage} onCreateAction={createActionFromAi}/ >}
           {activeView === 'overview' && <OverviewPage project={project} investigation={investigation} onNavigate={setActiveView} onRunAi={runAi} aiLoading={aiLoading}/>}
           {activeView === 'investigation' && <InvestigationPage project={project} investigation={investigation} aiResult={aiResult} aiLoading={aiLoading} onRunAi={runAi} onCreateAction={createActionFromAi}/>}
           {activeView === 'actions' && <ActionsPage project={project} actions={actions} onCreate={createAction} onApprove={id => withAction(id, () => relayApi.approveAction(selectedProjectId, id), 'Action approved.')} onExecute={id => withAction(id, () => relayApi.executeAction(selectedProjectId, id), 'Simulation executed.')} onVerify={id => withAction(id, () => relayApi.verifyAction(selectedProjectId, id), 'Action verified.')} busyActionId={busyActionId}/>}
