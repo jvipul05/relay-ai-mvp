@@ -387,3 +387,27 @@
   .mobile-more-menu button:hover,.mobile-more-menu button.active{background:#eef1ff;color:#4059ca}
   .mobile-more-menu button:focus-visible{outline:2px solid #8392ef;outline-offset:1px}
 }
+
+
+/* Multilingual output and connector controls */
+.language-picker{display:flex;flex-direction:column;gap:4px;min-width:105px;padding:0 2px}
+.language-picker>span{font-size:7px;letter-spacing:1.1px;font-weight:800;color:#8c97aa}
+.language-picker select{max-width:165px;min-width:105px;border:1px solid #e3e8f1;background:#fff;color:#44516a;border-radius:8px;padding:7px 26px 7px 9px;font-size:10px;font-weight:700;outline:none}
+.language-picker select:focus{border-color:#8c9af0;box-shadow:0 0 0 3px #8c9af021}
+.connector-url-form{padding:15px 20px 13px;border-top:1px solid #edf0f5;background:#fbfcff}
+.connector-url-form>label{display:flex;flex-direction:column;gap:7px;font-size:10px;color:#58657c;font-weight:750}
+.connector-url-form input{width:100%;min-width:0;border:1px solid #dfe5ef;background:#fff;border-radius:8px;padding:10px 11px;color:#344057;font-size:10px;outline:none}
+.connector-url-form input:focus{border-color:#8394f1;box-shadow:0 0 0 3px #8394f01c}
+.connector-url-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:9px}
+.connector-url-footer>span,.connector-current-url{font-size:9px;color:#929caf;line-height:1.5}
+.connector-url-footer .button{min-height:32px;padding:7px 10px;font-size:9px}
+.connector-current-url{margin:9px 0 0;overflow-wrap:anywhere}
+.connector-current-url strong{color:#56647c;font-weight:650}
+.connector-config-error{margin:0}
+.connector-saved-message{display:flex;align-items:center;gap:8px;padding:10px 13px;border:1px solid #cceedd;background:#f1fbf6;color:#177a58;border-radius:9px;font-size:10px;font-weight:700}
+.connector-info-banner{margin-bottom:0}
+.source-record-select{padding-top:2px;flex-shrink:0}
+.source-record-link{display:inline-flex;width:fit-content;margin-top:5px;color:#4e66d4;text-decoration:none;font-size:9px;font-weight:750}
+.source-record-link:hover{text-decoration:underline}
+@media(max-width:900px){.topbar-actions{gap:9px}.language-picker{min-width:92px}.language-picker select{min-width:92px;font-size:9px}}
+@media(max-width:600px){.topbar-actions{width:100%;justify-content:flex-end;flex-wrap:wrap}.language-picker{margin-right:auto;min-width:100px}.language-picker select{min-width:120px}.connector-url-form{padding:13px}.connector-url-footer{align-items:flex-start;flex-direction:column}.connector-url-footer .button{width:100%}}
