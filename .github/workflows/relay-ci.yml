@@ -13,6 +13,7 @@ jobs:
         working-directory: backend
     env:
       DATABASE_URL: sqlite://
+      PYTHONPATH: ${{ github.workspace }}/backend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
