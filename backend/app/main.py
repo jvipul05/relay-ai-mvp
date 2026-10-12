@@ -13,7 +13,7 @@ from app.api import actions, assistant, documents, gmail, health, mock_integrati
 scheduler = BackgroundScheduler(timezone="UTC")
 RUN_IN_PROCESS_SCHEDULER = os.getenv(
     "RELAY_ENABLE_IN_PROCESS_SCHEDULER",
-    "false" if os.getenv("K_SERVICE") else "true",
+    "true",
 ).strip().lower() in {"1", "true", "yes"}
 
 
