@@ -27,7 +27,7 @@ export default function OverviewPage({ project, investigation, onNavigate, onRun
     <div className="page-stack mission-page">
       <section className="mission-hero">
         <div className="mission-hero-copy">
-          <div className="mission-kicker"><span className="mission-kicker-mark">✦</span> YOUR PROJECT BRIEF <span className="mission-kicker-divider">/</span> LIVE DEMO DATA</div>
+          <div className="mission-kicker"><span className="mission-kicker-mark">✦</span> YOUR PROJECT BRIEF <span className="mission-kicker-divider">/</span> {project?.is_synthetic ? "SYNTHETIC DEMO DATA" : "CONNECTED PROJECT DATA"}</div>
           <div className="mission-project-line">
             <span className="mission-project-avatar">{project?.name?.slice(0, 1) || 'P'}</span>
             <div><span className="mission-project-id">{project?.id || 'PROJECT'}</span><h2>{project?.name || 'Your project'}</h2></div>
