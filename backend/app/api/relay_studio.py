@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from jsonschema import Draft202012Validator, ValidationError as JsonSchemaValidationError
 from sqlalchemy.orm import Session
 from google.genai import types
+from starlette.concurrency import run_in_threadpool
 
 from app.core.database import get_db
 from app.services.project_service import load_project_payload
@@ -203,7 +204,8 @@ async def preview_relay_payload(
         "tasks": project.get("tasks", [])[:15],
     }
     try:
-        generated = relay_structured_output(
+        generated = await run_in_threadpool(
+            relay_structured_output,
             {
                 "input_text": text,
                 "attachment_description": (
