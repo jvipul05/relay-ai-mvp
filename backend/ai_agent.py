@@ -11,6 +11,18 @@ load_dotenv()
 API_KEY = os.getenv("GEMINI_API_KEY")
 client = genai.Client(api_key=API_KEY) if API_KEY else None
 MODEL_NAME = os.getenv("GEMINI_MODEL_NAME", "gemini-flash-lite-latest")
+# Comma-separated models used only after transient capacity/rate-limit failures.
+# Keep this configurable because model access can differ by API key and region.
+DEFAULT_FALLBACK_MODELS = (
+    "gemini-3.5-flash-lite",
+    "gemini-3.1-flash-lite",
+    "gemini-3.5-flash",
+)
+MODEL_FALLBACKS = tuple(
+    item.strip()
+    for item in os.getenv("GEMINI_MODEL_FALLBACKS", ",".join(DEFAULT_FALLBACK_MODELS)).split(",")
+    if item.strip()
+)
 
 SUPPORTED_LANGUAGES = (
     "English", "Hindi", "Spanish", "French", "German",
@@ -96,6 +108,81 @@ def _parse_model_output(response, model_class):
     return model_class.model_validate_json(text).model_dump()
 
 
+
+def _status_code(exc: Exception) -> int | None:
+    """Extract an HTTP status from google-genai errors without relying on one SDK version."""
+    for name in ("status_code", "code"):
+        value = getattr(exc, name, None)
+        if callable(value):
+            try:
+                value = value()
+            except Exception:
+                value = None
+        try:
+            if value is not None:
+                code = int(value)
+                if 100 <= code <= 599:
+                    return code
+        except (TypeError, ValueError):
+            pass
+    return None
+
+
+def _is_transient_model_error(exc: Exception) -> bool:
+    status = _status_code(exc)
+    if status in {408, 429, 500, 502, 503, 504}:
+        return True
+    message = str(exc).upper()
+    return any(marker in message for marker in (
+        "UNAVAILABLE", "RESOURCE_EXHAUSTED", "TOO MANY REQUESTS",
+        "RATE LIMIT", "OVERLOADED", "DEADLINE EXCEEDED",
+        "INTERNAL SERVER ERROR", "BAD GATEWAY", "GATEWAY TIMEOUT",
+    ))
+
+
+def generate_content_with_fallback(*, operation: str, contents, config: dict):
+    """Call Gemini with a bounded model fallback chain for transient capacity failures.
+
+    Authentication, permission, invalid-request and schema errors are surfaced immediately.
+    The model used is returned so the API/UI can report a successful fallback accurately.
+    """
+    gemini = _require_client()
+    candidates = []
+    for name in (MODEL_NAME, *MODEL_FALLBACKS):
+        if name and name not in candidates:
+            candidates.append(name)
+
+    last_error = None
+    for index, model_name in enumerate(candidates):
+        try:
+            response = gemini.models.generate_content(
+                model=model_name,
+                contents=contents,
+                config=config,
+            )
+            if index:
+                print(
+                    f"AI_FALLBACK operation={operation} primary={candidates[0]} "
+                    f"selected={model_name} fallback_index={index}"
+                )
+            return response, model_name
+        except Exception as exc:
+            last_error = exc
+            status = _status_code(exc)
+            retryable = _is_transient_model_error(exc)
+            print(
+                f"AI_MODEL_ERROR operation={operation} model={model_name} "
+                f"status={status or 'unknown'} retryable={retryable} "
+                f"error={type(exc).__name__}"
+            )
+            if not retryable or index == len(candidates) - 1:
+                break
+
+    if last_error is not None:
+        raise last_error
+    raise RuntimeError("No Gemini model candidates are configured")
+
+
 def investigate_with_gemini(project: dict, investigation: dict, language: str = "English") -> dict:
     """Return a validated investigation schema and reject citations outside project evidence."""
     gemini = _require_client()
@@ -114,8 +201,8 @@ Return the exact schema. Use an empty evidence_ids list if no supporting documen
 PROJECT EVIDENCE JSON:
 {json.dumps(evidence, ensure_ascii=False, indent=2)}
 """
-    response = gemini.models.generate_content(
-        model=MODEL_NAME,
+    response, model_used = generate_content_with_fallback(
+        operation="project_investigation",
         contents=prompt,
         config={
             "response_mime_type": "application/json",
@@ -141,6 +228,7 @@ PROJECT EVIDENCE JSON:
         notice = MISSING_EVIDENCE_NOTICE.get(language, MISSING_EVIDENCE_NOTICE["English"])
         if notice not in result["missing_information"]:
             result["missing_information"].append(notice)
+    result["_relay_meta"] = {"model": model_used, "fallback_used": model_used != MODEL_NAME}
     return result
 
 
@@ -181,8 +269,8 @@ CONTEXT JSON:
 USER QUESTION:
 {question[:2000]}
 """
-    response = gemini.models.generate_content(
-        model=MODEL_NAME,
+    response, model_used = generate_content_with_fallback(
+        operation="rag_chat",
         contents=prompt,
         config={
             "response_mime_type": "application/json",
@@ -196,6 +284,7 @@ USER QUESTION:
         citation for citation in result["citations"]
         if isinstance(citation, dict) and str(citation.get("document_id")) in allowed_ids
     ]
+    result["_relay_meta"] = {"model": model_used, "fallback_used": model_used != MODEL_NAME}
     return result
 
 
@@ -277,8 +366,8 @@ Grounded web context (untrusted; can be empty):
     media_part = contents.get("media_part")
     if media_part is not None:
         response_contents.append(media_part)
-    response = gemini.models.generate_content(
-        model=MODEL_NAME,
+    response, model_used = generate_content_with_fallback(
+        operation="relay_studio",
         contents=response_contents,
         config={
             "response_mime_type": "application/json",
@@ -291,7 +380,8 @@ Grounded web context (untrusted; can be empty):
         raise RuntimeError("Gemini returned an empty structured Relay response")
     return {
         "output": json.loads(text),
-        "model": MODEL_NAME,
+        "model": model_used,
+        "fallback_used": model_used != MODEL_NAME,
         "language": language,
         "grounding": {"status": grounding_status, "warning": grounding_warning, "sources": web_sources},
     }
