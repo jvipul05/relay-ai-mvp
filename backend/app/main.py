@@ -1,7 +1,8 @@
 from contextlib import asynccontextmanager
+from time import perf_counter
 import os
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from apscheduler.schedulers.background import BackgroundScheduler
 
@@ -41,6 +42,38 @@ app = FastAPI(
     version=APP_VERSION,
     lifespan=lifespan,
 )
+
+
+@app.middleware("http")
+async def request_timing_middleware(request: Request, call_next):
+    """Expose request duration and log slow/AI API requests without logging payloads."""
+    started_at = perf_counter()
+    path = request.url.path
+    try:
+        response = await call_next(request)
+    except Exception:
+        duration_ms = (perf_counter() - started_at) * 1000
+        if path.startswith("/api/"):
+            print(
+                f"HTTP_TIMING method={request.method} path={path} "
+                f"status=500 duration_ms={duration_ms:.1f}"
+            )
+        raise
+
+    duration_ms = (perf_counter() - started_at) * 1000
+    response.headers["Server-Timing"] = f"app;dur={duration_ms:.1f}"
+    is_ai_request = any(
+        marker in path
+        for marker in ("/ai-investigation", "/chat", "/intelligence/ripple", "/relay/preview")
+    )
+    if path.startswith("/api/") and (is_ai_request or duration_ms >= 1000):
+        print(
+            f"HTTP_TIMING method={request.method} path={path} "
+            f"status={response.status_code} duration_ms={duration_ms:.1f}"
+        )
+    return response
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
