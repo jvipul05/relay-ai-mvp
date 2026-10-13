@@ -19,7 +19,13 @@ const projectPath = id => '/api/projects/' + encodeURIComponent(id);
 
 export const relayApi = {
   getProjects: () => request('/api/projects'),
+  createProject: data => request('/api/projects', { method: 'POST', body: JSON.stringify(data) }),
   getPortfolio: () => request('/api/portfolio'),
+  runRippleAnalysis: data => request('/api/intelligence/ripple', { method: 'POST', body: JSON.stringify(data) }),
+  getRippleHistory: (projectId, limit = 10) =>
+    request('/api/intelligence/history?project_id=' + encodeURIComponent(projectId) + '&limit=' + encodeURIComponent(limit)),
+  recordRippleOutcome: (recordId, data) =>
+    request('/api/intelligence/' + encodeURIComponent(recordId) + '/outcome', { method: 'POST', body: JSON.stringify(data) }),
   getProjectGraph: id => request(projectPath(id) + '/graph'),
   chatWithRag: (id, message, history = [], language = 'English') =>
     request(projectPath(id) + '/chat', { method: 'POST', body: JSON.stringify({ message, history, language }) }),
