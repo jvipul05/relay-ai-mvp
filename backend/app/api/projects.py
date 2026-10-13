@@ -152,7 +152,7 @@ def ai_investigation(
         generation_started_at = perf_counter()
         result = investigate_with_gemini(project, investigation, language=selected_language)
         print(
-            f"AI_STAGE_TIMING operation=project_investigation stage=postprocess "
+            f"AI_STAGE_TIMING operation=project_investigation stage=generation_and_validation "
             f"duration_ms={(perf_counter() - generation_started_at) * 1000:.1f}"
         )
         print(
