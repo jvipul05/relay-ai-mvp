@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
+from time import perf_counter
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -26,13 +27,28 @@ class ChatRequest(BaseModel):
 
 @router.post("/chat")
 def project_chat(project_id: str, request: ChatRequest, db: Session = Depends(get_db)):
+    request_started_at = perf_counter()
     project = load_project_payload(db, project_id)
     try:
         language = normalize_language(request.language)
+        retrieval_started_at = perf_counter()
         retrieval = retrieve_evidence(db, project_id, request.message, request.top_k)
+        print(
+            f"AI_STAGE_TIMING operation=rag_chat stage=retrieval "
+            f"duration_ms={(perf_counter() - retrieval_started_at) * 1000:.1f}"
+        )
+        generation_started_at = perf_counter()
         result = chat_with_rag(
             project, request.message, retrieval.get("results", []),
             [message.model_dump() for message in request.history], language=language,
+        )
+        print(
+            f"AI_STAGE_TIMING operation=rag_chat stage=postprocess "
+            f"duration_ms={(perf_counter() - generation_started_at) * 1000:.1f}"
+        )
+        print(
+            f"AI_STAGE_TIMING operation=rag_chat stage=total "
+            f"duration_ms={(perf_counter() - request_started_at) * 1000:.1f}"
         )
         model_meta = result.pop("_relay_meta", {})
         return {
