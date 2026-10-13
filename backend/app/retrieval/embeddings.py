@@ -18,16 +18,18 @@ def _embed_single_query(model: str, text: str) -> tuple[float, ...]:
     """Cache repeated single-query embeddings within a process (bounded memory)."""
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
-        return ()
+        raise RuntimeError("GEMINI_API_KEY is not configured for embeddings")
     response = _get_client(api_key).models.embed_content(model=model, contents=[text])
     items = getattr(response, "embeddings", None) or []
     if not items:
-        return ()
+        raise RuntimeError("Embedding API returned no vectors")
     item = items[0]
     values = getattr(item, "values", None)
     if values is None and isinstance(item, dict):
         values = item.get("values")
-    return tuple(float(value) for value in values) if values else ()
+    if not values:
+        raise RuntimeError("Embedding API returned an empty vector")
+    return tuple(float(value) for value in values)
 
 
 def embed_texts(texts: list[str]) -> list[list[float]] | None:
