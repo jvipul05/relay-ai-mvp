@@ -18,10 +18,11 @@ async function request(path, options = {}) {
   }
   const payload = await response.json().catch(() => ({}));
   const durationMs = Math.round(performance.now() - startedAt);
+  const serverTiming = response.headers.get('Server-Timing') || 'not exposed';
   if (durationMs >= 1500) {
-    console.warn(`[Relay API] Slow request: ${method} ${path.split('?')[0]} status=${response.status} duration_ms=${durationMs}`);
+    console.warn(`[Relay API] Slow request: ${method} ${path.split('?')[0]} status=${response.status} duration_ms=${durationMs} server_timing="${serverTiming}"`);
   } else if (import.meta.env.DEV) {
-    console.debug(`[Relay API] ${method} ${path.split('?')[0]} status=${response.status} duration_ms=${durationMs}`);
+    console.debug(`[Relay API] ${method} ${path.split('?')[0]} status=${response.status} duration_ms=${durationMs} server_timing="${serverTiming}"`);
   }
   if (!response.ok) {
     const message = typeof payload.detail === 'string' ? payload.detail : 'Request failed (' + response.status + ')';
