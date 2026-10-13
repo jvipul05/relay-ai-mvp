@@ -1,4 +1,5 @@
 from datetime import date
+from time import perf_counter
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -129,6 +130,7 @@ def ai_investigation(
     language: str = Query(default="English", max_length=40),
     db: Session = Depends(get_db),
 ):
+    request_started_at = perf_counter()
     project = load_project_payload(db, project_id)
     investigation = build_investigation(project)
     try:
@@ -138,11 +140,25 @@ def ai_investigation(
             f"release {project.get('planned_release')} "
             + " ".join(f"{t.get('name', '')} {t.get('status', '')} {t.get('owner', '')}" for t in project.get("tasks", []))
         )
+        retrieval_started_at = perf_counter()
         retrieved = retrieve_evidence(db, project_id, retrieval_query, top_k=5)
+        print(
+            f"AI_STAGE_TIMING operation=project_investigation stage=retrieval "
+            f"duration_ms={(perf_counter() - retrieval_started_at) * 1000:.1f}"
+        )
         investigation["retrieved_evidence"] = retrieved["results"]
         investigation["retrieval_mode"] = retrieved["retrieval_mode"]
         project["retrieved_evidence"] = retrieved["results"]
+        generation_started_at = perf_counter()
         result = investigate_with_gemini(project, investigation, language=selected_language)
+        print(
+            f"AI_STAGE_TIMING operation=project_investigation stage=postprocess "
+            f"duration_ms={(perf_counter() - generation_started_at) * 1000:.1f}"
+        )
+        print(
+            f"AI_STAGE_TIMING operation=project_investigation stage=total "
+            f"duration_ms={(perf_counter() - request_started_at) * 1000:.1f}"
+        )
         model_meta = result.pop("_relay_meta", {})
         return {
             "project_id": project_id,
