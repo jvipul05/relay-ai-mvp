@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { relayApi } from './api/client';
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
@@ -101,19 +101,29 @@ function RelayWorkspace({ onSignOut }) {
   const [sourceFetchResults, setSourceFetchResults] = useState({ jira: null, confluence: null });
   const [sourceSyncResults, setSourceSyncResults] = useState({ jira: null, confluence: null });
   const [sourceErrors, setSourceErrors] = useState({ jira: '', confluence: '' });
+  const projectLoadSequence = useRef(0);
 
   const selectedProject = useMemo(() => projects.find(p => p.id === selectedProjectId) || project, [projects, selectedProjectId, project]);
   const loadProjectData = useCallback(async (projectId, quiet = false) => {
     if (!projectId) return;
+    const loadSequence = ++projectLoadSequence.current;
     if (!quiet) setRefreshing(true);
     setError('');
     try {
       const [projectData, investigationData, actionData] = await Promise.all([
         relayApi.getProject(projectId), relayApi.getInvestigation(projectId), relayApi.getActions(projectId),
       ]);
+      // Ignore an older response if the user has already selected/refreshed another project.
+      if (loadSequence !== projectLoadSequence.current) return;
       setProject(projectData); setInvestigation(investigationData); setActions(actionData.actions || []); setAiResult(null);
-    } catch (err) { setError(err.message || 'Could not load project data.'); }
-    finally { setRefreshing(false); setLoading(false); }
+    } catch (err) {
+      if (loadSequence === projectLoadSequence.current) setError(err.message || 'Could not load project data.');
+    } finally {
+      if (loadSequence === projectLoadSequence.current) {
+        setRefreshing(false);
+        setLoading(false);
+      }
+    }
   }, []);
 
   useEffect(() => {
