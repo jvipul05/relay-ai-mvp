@@ -43,7 +43,7 @@ def project_chat(project_id: str, request: ChatRequest, db: Session = Depends(ge
             [message.model_dump() for message in request.history], language=language,
         )
         print(
-            f"AI_STAGE_TIMING operation=rag_chat stage=postprocess "
+            f"AI_STAGE_TIMING operation=rag_chat stage=generation_and_validation "
             f"duration_ms={(perf_counter() - generation_started_at) * 1000:.1f}"
         )
         print(
