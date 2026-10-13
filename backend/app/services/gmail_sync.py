@@ -15,6 +15,7 @@ from googleapiclient.discovery import build
 from sqlalchemy.orm import Session
 
 from app.core.database import SessionLocal
+from app.core.config import GMAIL_CONNECTOR_ENABLED
 from app.models import GmailConnection, GmailProcessedMessage, GmailSyncConfig, ProjectRecord, ProjectTask
 from app.retrieval.rag_service import ingest_document
 
@@ -268,7 +269,9 @@ def sync_project(db: Session, project_id: str, max_messages: int = 100) -> dict:
 
 
 def scheduled_sync_once() -> dict:
-    """Sync projects that are due; safe for APScheduler or a one-shot Cloud Run Job."""
+    """Sync due projects only when the private Gmail connector is enabled."""
+    if not GMAIL_CONNECTOR_ENABLED:
+        return {"status": "disabled", "message": "Gmail connector is disabled for this deployment."}
     db = SessionLocal()
     summary = {"enabled_projects": 0, "projects_due": 0, "projects_synced": 0, "failures": []}
     try:
