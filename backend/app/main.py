@@ -8,7 +8,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from app.core.config import APP_NAME, APP_VERSION, CORS_ORIGINS
 from app.core.database import Base, engine
 from app import models  # noqa: F401 - registers all SQLAlchemy metadata
-from app.api import actions, assistant, documents, gmail, health, mock_integrations, projects, relay_studio
+from app.api import actions, assistant, documents, gmail, health, intelligence, mock_integrations, projects, relay_studio
 
 scheduler = BackgroundScheduler(timezone="UTC")
 RUN_IN_PROCESS_SCHEDULER = os.getenv(
@@ -50,6 +50,7 @@ app.add_middleware(
 )
 app.include_router(health.router)
 app.include_router(projects.router)
+app.include_router(intelligence.router)
 app.include_router(actions.router)
 app.include_router(documents.router)
 app.include_router(gmail.router)
