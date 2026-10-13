@@ -6,8 +6,23 @@ async function request(path, options = {}) {
     ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(options.headers || {}),
   };
-  const response = await fetch(API_BASE + path, { ...options, headers });
+  const startedAt = performance.now();
+  const method = (options.method || 'GET').toUpperCase();
+  let response;
+  try {
+    response = await fetch(API_BASE + path, { ...options, headers });
+  } catch (error) {
+    const durationMs = Math.round(performance.now() - startedAt);
+    console.warn(`[Relay API] Network failure: ${method} ${path.split('?')[0]} duration_ms=${durationMs}`);
+    throw error;
+  }
   const payload = await response.json().catch(() => ({}));
+  const durationMs = Math.round(performance.now() - startedAt);
+  if (durationMs >= 1500) {
+    console.warn(`[Relay API] Slow request: ${method} ${path.split('?')[0]} status=${response.status} duration_ms=${durationMs}`);
+  } else if (import.meta.env.DEV) {
+    console.debug(`[Relay API] ${method} ${path.split('?')[0]} status=${response.status} duration_ms=${durationMs}`);
+  }
   if (!response.ok) {
     const message = typeof payload.detail === 'string' ? payload.detail : 'Request failed (' + response.status + ')';
     throw new Error(message);
