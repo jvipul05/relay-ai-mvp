@@ -38,6 +38,8 @@ export default function EmailSyncPage({ project, status, loadingStatus, onRefres
       <button className="button button-secondary" onClick={onRefreshStatus} disabled={loadingStatus || busy}>{loadingStatus ? 'Refreshing…' : '↻ Refresh status'}</button>
     </section>
 
+    {status?.disabled && <div className="execution-disclaimer" role="status"><span>ⓘ</span><p>{status.message || "Gmail is disabled in this public demo."} The rest of the workspace uses synthetic demonstration data.</p></div>}
+
     <section className="panel">
       <div className="panel-header"><div><h3>Gmail connection</h3><p>Read-only access to the selected mailbox</p></div>
         <span className={`status-badge ${status?.connected ? 'status-success' : 'status-warning'}`}><span className="status-dot"/>{status?.connected ? 'Connected' : 'Not connected'}</span>
@@ -47,7 +49,7 @@ export default function EmailSyncPage({ project, status, loadingStatus, onRefres
           <div className="email-account-icon">G</div>
           <div className="email-account-meta"><strong>{status?.email_address || 'No Gmail account connected'}</strong><small>Active project: {project?.name || project?.id || 'Select a project'}</small></div>
           <div className="email-account-actions">
-            <button className="button button-primary" onClick={onConnect} disabled={busy || !project?.id}>{busy ? 'Please wait…' : status?.connected ? 'Reconnect Gmail' : 'Login with Google'}</button>
+            <button className="button button-primary" onClick={onConnect} disabled={Boolean(status?.disabled) || busy || !project?.id}>{busy ? 'Please wait…' : status?.connected ? 'Reconnect Gmail' : 'Login with Google'}</button>
             {status?.connected && <button className="button button-secondary" onClick={onDisconnect} disabled={busy}>Disconnect</button>}
           </div>
         </div>
@@ -61,24 +63,24 @@ export default function EmailSyncPage({ project, status, loadingStatus, onRefres
       <div className="panel-header"><div><h3>Project email configuration</h3><p>Keywords determine which emails are selected for this project.</p></div></div>
       <form className="email-config-form" onSubmit={save}>
         <label>Keywords <span className="field-hint">One per line or comma-separated · up to 20</span>
-          <textarea rows={6} value={keywordsText} onChange={e => setKeywordsText(e.target.value)} placeholder={'Project Alpha\ndelayed\nblocked\nrelease'} disabled={!status?.connected || busy}/>
+          <textarea rows={6} value={keywordsText} onChange={e => setKeywordsText(e.target.value)} placeholder={'Project Alpha\ndelayed\nblocked\nrelease'} disabled={Boolean(status?.disabled) || !status?.connected || busy}/>
         </label>
         <div className="email-config-row">
           <label>Scheduled sync interval
-            <select value={intervalMinutes} onChange={e => setIntervalMinutes(Number(e.target.value))} disabled={!status?.connected || busy}>
+            <select value={intervalMinutes} onChange={e => setIntervalMinutes(Number(e.target.value))} disabled={Boolean(status?.disabled) || !status?.connected || busy}>
               <option value={15}>Every 15 minutes</option><option value={30}>Every 30 minutes</option><option value={60}>Every hour</option><option value={360}>Every 6 hours</option><option value={720}>Every 12 hours</option><option value={1440}>Daily</option>
             </select>
           </label>
-          <label className="email-enabled-toggle"><input type="checkbox" checked={enabled} onChange={e => setEnabled(e.target.checked)} disabled={!status?.connected || busy}/> Enable scheduled sync</label>
+          <label className="email-enabled-toggle"><input type="checkbox" checked={enabled} onChange={e => setEnabled(e.target.checked)} disabled={Boolean(status?.disabled) || !status?.connected || busy}/> Enable scheduled sync</label>
         </div>
-        <div className="form-footer"><span>Saved configuration applies only to {project?.name || 'the selected project'}.</span><button className="button button-primary" type="submit" disabled={!status?.connected || busy}>{busy ? 'Saving…' : 'Save configuration'}</button></div>
+        <div className="form-footer"><span>Saved configuration applies only to {project?.name || 'the selected project'}.</span><button className="button button-primary" type="submit" disabled={Boolean(status?.disabled) || !status?.connected || busy}>{busy ? 'Saving…' : 'Save configuration'}</button></div>
         {localMessage && <p className="form-error">{localMessage}</p>}
         {configResult && <p className="email-success">{configResult.message || 'Configuration saved.'}</p>}
       </form>
     </section>
 
     <section className="panel">
-      <div className="panel-header"><div><h3>Manual sync</h3><p>Fetch matching messages now, without waiting for the schedule.</p></div><button className="button button-primary" onClick={onRunSync} disabled={!status?.connected || busy}>{busy ? 'Syncing…' : '↻ Run sync now'}</button></div>
+      <div className="panel-header"><div><h3>Manual sync</h3><p>Fetch matching messages now, without waiting for the schedule.</p></div><button className="button button-primary" onClick={onRunSync} disabled={Boolean(status?.disabled) || !status?.connected || busy}>{busy ? 'Syncing…' : '↻ Run sync now'}</button></div>
       {syncResult ? <div className="sync-result-grid">
         <div><span>Matched</span><strong>{syncResult.messages_matched ?? '—'}</strong></div>
         <div><span>Ingested</span><strong>{syncResult.messages_ingested ?? '—'}</strong></div>

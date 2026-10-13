@@ -210,6 +210,13 @@ function RelayWorkspace({ onSignOut }) {
     finally { setBusyActionId(''); }
   };
   const createAction = async data => { await relayApi.createAction(selectedProjectId, data); await loadProjectData(selectedProjectId, true); showToast('Action saved for approval.'); };
+  const createRippleAction = async data => {
+    if (!selectedProjectId) throw new Error('Select a project first.');
+    await relayApi.createAction(selectedProjectId, data);
+    await loadProjectData(selectedProjectId, true);
+    setActiveView('actions');
+    showToast('Ripple recommendation saved for human approval. Execution remains simulated.');
+  };
   const createActionFromAi = async data => {
     if (!selectedProjectId) return;
     setError('');
@@ -255,7 +262,7 @@ function RelayWorkspace({ onSignOut }) {
           {activeView === 'dependencies' && <DependencyMapPage project={project}/>}
           {activeView === 'chat' && <RagChatPage project={selectedProject} onChat={chatWithRag} language={responseLanguage}/>}
           {activeView === 'relay-studio' && <RelayStudioPage project={selectedProject} language={responseLanguage} onCreateAction={createStudioAction}/>}
-          {activeView === 'ripple' && <RippleIntelligencePage project={selectedProject} language={responseLanguage}/>}
+          {activeView === 'ripple' && <RippleIntelligencePage project={selectedProject} language={responseLanguage} onCreateAction={createRippleAction}/>}
           {activeView === 'overview' && <OverviewPage project={project} investigation={investigation} onNavigate={setActiveView} onRunAi={runAi} aiLoading={aiLoading}/>}
           {activeView === 'investigation' && <InvestigationPage project={project} investigation={investigation} aiResult={aiResult} aiLoading={aiLoading} onRunAi={runAi} onCreateAction={createActionFromAi}/>}
           {activeView === 'actions' && <ActionsPage project={project} actions={actions} onCreate={createAction} onApprove={id => withAction(id, () => relayApi.approveAction(selectedProjectId, id), 'Action approved.')} onExecute={id => withAction(id, () => relayApi.executeAction(selectedProjectId, id), 'Simulation executed.')} onVerify={id => withAction(id, () => relayApi.verifyAction(selectedProjectId, id), 'Action verified.')} busyActionId={busyActionId}/>}

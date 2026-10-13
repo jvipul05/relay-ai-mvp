@@ -13,7 +13,7 @@ function PanelHeading({ title, description, right }) {
   return <div className="panel-header"><div><h3>{title}</h3>{description && <p>{description}</p>}</div>{right}</div>;
 }
 
-export default function RippleIntelligencePage({ project, language = 'English' }) {
+export default function RippleIntelligencePage({ project, language = 'English', onCreateAction }) {
   const [changeText, setChangeText] = useState(EXAMPLE_CHANGE);
   const [source, setSource] = useState('vendor_email');
   const [assumedDelayDays, setAssumedDelayDays] = useState(3);
@@ -24,6 +24,7 @@ export default function RippleIntelligencePage({ project, language = 'English' }
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState('');
   const [savingOutcome, setSavingOutcome] = useState('');
+  const [creatingRecommendation, setCreatingRecommendation] = useState(null);
 
   const refreshHistory = async (projectId = project?.id) => {
     if (!projectId) return;
@@ -85,6 +86,34 @@ export default function RippleIntelligencePage({ project, language = 'English' }
       setError(err.message || 'Could not save outcome feedback.');
     } finally {
       setSavingOutcome('');
+    }
+  };
+
+  const submitRecommendedAction = async (item, index) => {
+    if (!onCreateAction) return;
+    setCreatingRecommendation(index);
+    setError('');
+    const evidenceReferences = (result?.evidence || []).slice(0, 5)
+      .map(entry => '- ' + (entry.title || entry.document_id || 'Evidence item')).join('\n');
+    const tradeoffs = (item.tradeoffs || []).map(value => '- ' + value).join('\n');
+    const description = [
+      'Created from Ripple Intelligence for ' + (project?.name || project?.id || 'the selected project') + '.',
+      'Rationale: ' + String(item.rationale || 'Review the linked investigation before acting.'),
+      tradeoffs ? 'Trade-offs to review:\n' + tradeoffs : '',
+      'Change signal: ' + changeText.trim().slice(0, 1800),
+      result?.record_id ? 'Ripple investigation ID: ' + result.record_id : '',
+      evidenceReferences ? 'Evidence references:\n' + evidenceReferences : '',
+      'Safety: this is a proposal requiring human approval. Demo execution is simulated and does not change external systems.',
+    ].filter(Boolean).join('\n\n').slice(0, 9500);
+    try {
+      await onCreateAction({
+        title: String(item.title || 'Ripple recovery action').trim().slice(0, 255),
+        description,
+      });
+    } catch (err) {
+      setError(err.message || 'Could not submit this recommendation for approval.');
+    } finally {
+      setCreatingRecommendation(null);
     }
   };
 
@@ -177,7 +206,7 @@ export default function RippleIntelligencePage({ project, language = 'English' }
       <section className="panel">
         <PanelHeading title="Recommended interventions" description="Suggestions remain proposals; use Recovery Actions to request approval before execution."/>
         {(analysis.recommended_actions || []).length ? <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 12 }}>
-          {analysis.recommended_actions.map((item, index) => <article key={index} style={cardStyle}><div className="eyebrow">OPTION 0{index + 1}</div><h4>{item.title}</h4><p>{item.rationale}</p>{item.tradeoffs?.length > 0 && <><strong style={{ fontSize: 12 }}>Trade-offs</strong><ul>{item.tradeoffs.map((tradeoff, j) => <li key={j}>{tradeoff}</li>)}</ul></>}</article>)}
+          {analysis.recommended_actions.map((item, index) => <article key={index} style={cardStyle}><div className="eyebrow">OPTION 0{index + 1}</div><h4>{item.title}</h4><p>{item.rationale}</p>{item.tradeoffs?.length > 0 && <><strong style={{ fontSize: 12 }}>Trade-offs</strong><ul>{item.tradeoffs.map((tradeoff, j) => <li key={j}>{tradeoff}</li>)}</ul></>}<button className="button button-primary button-small" type="button" disabled={creatingRecommendation === index} onClick={() => submitRecommendedAction(item, index)}>{creatingRecommendation === index ? "Submitting for approval…" : "Send to Recovery Actions →"}</button></article>)}
         </div> : <p>No intervention could be recommended from available evidence.</p>}
       </section>
 

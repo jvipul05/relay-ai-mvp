@@ -7,7 +7,8 @@ RUN npm ci
 
 COPY . .
 
-ENV VITE_API_BASE_URL=https://relay-backend-272344028278.asia-south1.run.app
+ARG VITE_API_BASE_URL=https://relay-backend-272344028278.asia-south1.run.app
+ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
 
 RUN npm run build
 

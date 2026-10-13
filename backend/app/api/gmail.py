@@ -7,10 +7,16 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.config import GMAIL_CONNECTOR_ENABLED
 from app.models import GmailConnection, GmailOAuthState, GmailSyncConfig, ProjectRecord
 from app.services.gmail_sync import create_flow, encrypt_credentials, load_client_config, sync_project
 
 router = APIRouter(tags=["gmail-email-sync"])
+
+
+def _ensure_gmail_enabled():
+    if not GMAIL_CONNECTOR_ENABLED:
+        raise HTTPException(status_code=403, detail="Gmail is disabled in the public demo. Enable it only on a private deployment.")
 
 
 class GmailConfigRequest(BaseModel):
@@ -26,6 +32,7 @@ def _require_project(db: Session, project_id: str):
 
 @router.post("/api/projects/{project_id}/email-sync/gmail/connect")
 def gmail_connect(project_id: str, db: Session = Depends(get_db)):
+    _ensure_gmail_enabled()
     _require_project(db, project_id)
     try:
         load_client_config()
@@ -55,6 +62,7 @@ def gmail_connect(project_id: str, db: Session = Depends(get_db)):
 @router.get("/api/email/gmail/callback")
 def gmail_callback(code: str | None = None, state: str | None = None,
                    error: str | None = None, db: Session = Depends(get_db)):
+    _ensure_gmail_enabled()
     if error:
         raise HTTPException(status_code=400, detail=f"Google authorization was not completed: {error}")
     if not code or not state:
@@ -99,6 +107,7 @@ def gmail_callback(code: str | None = None, state: str | None = None,
 
 @router.post("/api/projects/{project_id}/email-sync/gmail/config")
 def configure_gmail(project_id: str, request: GmailConfigRequest, db: Session = Depends(get_db)):
+    _ensure_gmail_enabled()
     _require_project(db, project_id)
     if not db.query(GmailConnection).filter(GmailConnection.project_id == project_id).first():
         raise HTTPException(status_code=409, detail="Connect Gmail before configuring sync")
@@ -120,6 +129,7 @@ def configure_gmail(project_id: str, request: GmailConfigRequest, db: Session = 
 
 @router.post("/api/projects/{project_id}/email-sync/gmail/run")
 def run_gmail_sync(project_id: str, db: Session = Depends(get_db)):
+    _ensure_gmail_enabled()
     _require_project(db, project_id)
     try:
         return sync_project(db, project_id)
@@ -135,6 +145,13 @@ def run_gmail_sync(project_id: str, db: Session = Depends(get_db)):
 
 @router.get("/api/projects/{project_id}/email-sync/gmail/status")
 def gmail_status(project_id: str, db: Session = Depends(get_db)):
+    if not GMAIL_CONNECTOR_ENABLED:
+        return {
+            "project_id": project_id, "connected": False, "email_address": None,
+            "enabled": False, "keywords": [], "interval_minutes": 15,
+            "last_sync_at": None, "last_error": None, "disabled": True,
+            "message": "Gmail is disabled in the public demo. Enable it only on a private deployment.",
+        }
     _require_project(db, project_id)
     connection = db.query(GmailConnection).filter(GmailConnection.project_id == project_id).first()
     config = db.query(GmailSyncConfig).filter(GmailSyncConfig.project_id == project_id).first()
@@ -149,6 +166,7 @@ def gmail_status(project_id: str, db: Session = Depends(get_db)):
 
 @router.delete("/api/projects/{project_id}/email-sync/gmail/disconnect")
 def gmail_disconnect(project_id: str, db: Session = Depends(get_db)):
+    _ensure_gmail_enabled()
     _require_project(db, project_id)
     connection = db.query(GmailConnection).filter(GmailConnection.project_id == project_id).first()
     config = db.query(GmailSyncConfig).filter(GmailSyncConfig.project_id == project_id).first()
