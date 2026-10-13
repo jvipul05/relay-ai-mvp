@@ -196,12 +196,13 @@ def retrieve_evidence(db: Session, project_id: str, query: str, top_k: int = 5) 
     docs_by_id = {doc.document_id: doc for doc in db.query(ProjectDocument).filter(ProjectDocument.project_id == project_id).all()}
     scored = []
     chunked_document_ids = {chunk.document_id for chunk in chunks}
-    used_vectors = bool(query_vector) and any(vector_from_json(chunk.embedding_json) for chunk in chunks)
-    for chunk in chunks:
+    # Parse each stored vector once; previously each chunk could be decoded twice per query.
+    prepared_chunks = [(chunk, vector_from_json(chunk.embedding_json)) for chunk in chunks]
+    used_vectors = bool(query_vector) and any(vector for _, vector in prepared_chunks)
+    for chunk, vector in prepared_chunks:
         doc = docs_by_id.get(chunk.document_id)
         if not doc:
             continue
-        vector = vector_from_json(chunk.embedding_json)
         score = _cosine(query_vector, vector) if used_vectors and query_vector and vector else _keyword_score(query, chunk.content)
         if score > 0:
             scored.append({"document_id": doc.document_id, "chunk_id": chunk.chunk_id,

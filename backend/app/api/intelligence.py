@@ -1,6 +1,7 @@
 """Relay Ripple Intelligence: grounded change analysis, scenario estimates, and feedback."""
 import json
 import re
+from time import perf_counter
 from datetime import datetime, timedelta
 from uuid import uuid4
 
@@ -188,16 +189,28 @@ def _heuristic_project_ids(change_text: str, portfolio: list[dict], selected_id:
 
 @router.post("/ripple")
 def analyze_ripple(request: RippleRequest, db: Session = Depends(get_db)):
+    request_started_at = perf_counter()
     project = db.query(ProjectRecord).filter(ProjectRecord.project_id == request.project_id).first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found.")
     try:
         language = normalize_language(request.language)
+        context_started_at = perf_counter()
         portfolio, display_by_id = _portfolio_context(db)
+        print(
+            f"AI_STAGE_TIMING operation=ripple stage=portfolio_context "
+            f"duration_ms={(perf_counter() - context_started_at) * 1000:.1f}"
+        )
+        retrieval_started_at = perf_counter()
         evidence_result = retrieve_evidence(
             db, request.project_id, request.change_text, top_k=8
         )
         evidence = evidence_result.get("results", [])
+        print(
+            f"AI_STAGE_TIMING operation=ripple stage=retrieval "
+            f"duration_ms={(perf_counter() - retrieval_started_at) * 1000:.1f}"
+        )
+        generation_started_at = perf_counter()
         analysis = analyze_ripple_with_gemini(
             change_text=request.change_text,
             project_id=project.project_id,
@@ -205,6 +218,10 @@ def analyze_ripple(request: RippleRequest, db: Session = Depends(get_db)):
             portfolio_context=portfolio,
             evidence=evidence,
             language=language,
+        )
+        print(
+            f"AI_STAGE_TIMING operation=ripple stage=generation_and_validation "
+            f"duration_ms={(perf_counter() - generation_started_at) * 1000:.1f}"
         )
         model_meta = analysis.pop("_relay_meta", {})
         estimated_days = int(analysis.get("estimated_delay_days") or 0)
@@ -249,6 +266,10 @@ def analyze_ripple(request: RippleRequest, db: Session = Depends(get_db)):
             created_at=datetime.utcnow(),
         ))
         db.commit()
+        print(
+            f"AI_STAGE_TIMING operation=ripple stage=total "
+            f"duration_ms={(perf_counter() - request_started_at) * 1000:.1f}"
+        )
         return {"record_id": record_id, **payload}
     except ValueError as exc:
         db.rollback()

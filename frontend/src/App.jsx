@@ -1,21 +1,21 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { relayApi } from './api/client';
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
 import LoadingState from './components/LoadingState';
-import OverviewPage from './pages/OverviewPage';
-import InvestigationPage from './pages/InvestigationPage';
-import ActionsPage from './pages/ActionsPage';
+const OverviewPage = lazy(() => import('./pages/OverviewPage'));
+const InvestigationPage = lazy(() => import('./pages/InvestigationPage'));
+const ActionsPage = lazy(() => import('./pages/ActionsPage'));
 import EvidenceList from './components/EvidenceList';
-import EmailSyncPage from './pages/EmailSyncPage';
-import EvidenceSearchPage from './pages/EvidenceSearchPage';
-import PortfolioPage from './pages/PortfolioPage';
-import RagChatPage from './pages/RagChatPage';
-import DependencyMapPage from './pages/DependencyMapPage';
-import DataSourcesPage from './pages/DataSourcesPage';
+const EmailSyncPage = lazy(() => import('./pages/EmailSyncPage'));
+const EvidenceSearchPage = lazy(() => import('./pages/EvidenceSearchPage'));
+const PortfolioPage = lazy(() => import('./pages/PortfolioPage'));
+const RagChatPage = lazy(() => import('./pages/RagChatPage'));
+const DependencyMapPage = lazy(() => import('./pages/DependencyMapPage'));
+const DataSourcesPage = lazy(() => import('./pages/DataSourcesPage'));
 import LoginPage from './pages/LoginPage';
-import RelayStudioPage from './pages/RelayStudioPage';
-import RippleIntelligencePage from './pages/RippleIntelligencePage';
+const RelayStudioPage = lazy(() => import('./pages/RelayStudioPage'));
+const RippleIntelligencePage = lazy(() => import('./pages/RippleIntelligencePage'));
 import './styles.css';
 
 const GUEST_SESSION_KEY = 'relay_demo_access';
@@ -101,19 +101,29 @@ function RelayWorkspace({ onSignOut }) {
   const [sourceFetchResults, setSourceFetchResults] = useState({ jira: null, confluence: null });
   const [sourceSyncResults, setSourceSyncResults] = useState({ jira: null, confluence: null });
   const [sourceErrors, setSourceErrors] = useState({ jira: '', confluence: '' });
+  const projectLoadSequence = useRef(0);
 
   const selectedProject = useMemo(() => projects.find(p => p.id === selectedProjectId) || project, [projects, selectedProjectId, project]);
   const loadProjectData = useCallback(async (projectId, quiet = false) => {
     if (!projectId) return;
+    const loadSequence = ++projectLoadSequence.current;
     if (!quiet) setRefreshing(true);
     setError('');
     try {
       const [projectData, investigationData, actionData] = await Promise.all([
         relayApi.getProject(projectId), relayApi.getInvestigation(projectId), relayApi.getActions(projectId),
       ]);
+      // Ignore an older response if the user has already selected/refreshed another project.
+      if (loadSequence !== projectLoadSequence.current) return;
       setProject(projectData); setInvestigation(investigationData); setActions(actionData.actions || []); setAiResult(null);
-    } catch (err) { setError(err.message || 'Could not load project data.'); }
-    finally { setRefreshing(false); setLoading(false); }
+    } catch (err) {
+      if (loadSequence === projectLoadSequence.current) setError(err.message || 'Could not load project data.');
+    } finally {
+      if (loadSequence === projectLoadSequence.current) {
+        setRefreshing(false);
+        setLoading(false);
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -239,7 +249,7 @@ function RelayWorkspace({ onSignOut }) {
   return <div className="app-shell">
     <Sidebar activeView={activeView} onNavigate={setActiveView} projects={projects} selectedProjectId={selectedProjectId} onSelectProject={setSelectedProjectId} onSignOut={onSignOut}/>
     <main className="main-area"><Topbar activeView={activeView} project={selectedProject} onRefresh={() => loadProjectData(selectedProjectId)} refreshing={refreshing} language={responseLanguage} onLanguageChange={setResponseLanguage}/>
-      <div className="main-content">{error && <div className="error-banner"><span>!</span><div><strong>Something needs attention</strong><p>{error}</p></div><button onClick={() => setError('')} aria-label="Dismiss error">×</button></div>}
+      <div className="main-content"><Suspense fallback={<div className="app-loading"><LoadingState label="Loading workspace view…"/></div>}>{error && <div className="error-banner"><span>!</span><div><strong>Something needs attention</strong><p>{error}</p></div><button onClick={() => setError('')} aria-label="Dismiss error">×</button></div>}
         {!projects.length ? <section className="panel"><div className="empty-state"><div className="empty-icon">⌂</div><h3>No projects yet</h3><p>Add a project through the backend seed script or project API. The UI automatically lists projects returned by the server.</p></div></section> : <>
           {activeView === 'portfolio' && <PortfolioPage onCreateProject={createProject} onOpenProject={id => { setSelectedProjectId(id); setActiveView('overview'); }}/>}
           {activeView === 'dependencies' && <DependencyMapPage project={project}/>}
@@ -254,7 +264,7 @@ function RelayWorkspace({ onSignOut }) {
           {activeView === 'sources' && <DataSourcesPage project={selectedProject} onFetch={fetchSourceRecords} onSync={syncSourceRecords} busySource={sourceBusy} fetchResults={sourceFetchResults} syncResults={sourceSyncResults} errors={sourceErrors}/>} 
         </>}
         <footer className="app-footer"><span>RELAY · ORGANIZATIONAL INTELLIGENCE</span><span>Guest demo workspace · Simulated execution</span></footer>
-      </div>
+      </Suspense></div>
     </main>
     <nav className="mobile-nav" aria-label="Quick navigation">
       {MOBILE_NAV_ITEMS.map(item => (

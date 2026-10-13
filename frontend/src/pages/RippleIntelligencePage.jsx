@@ -59,7 +59,9 @@ export default function RippleIntelligencePage({ project, language = 'English' }
         assumed_delay_days: Number(assumedDelayDays) || 0,
       });
       setResult(response);
-      await refreshHistory(project.id);
+      // The analysis is ready; refresh history independently so it does not keep
+      // the main Analyze button in its loading state.
+      void refreshHistory(project.id);
     } catch (err) {
       setError(err.message || 'Ripple analysis failed. No actions were executed.');
     } finally {
