@@ -34,9 +34,11 @@ def project_chat(project_id: str, request: ChatRequest, db: Session = Depends(ge
             project, request.message, retrieval.get("results", []),
             [message.model_dump() for message in request.history], language=language,
         )
+        model_meta = result.pop("_relay_meta", {})
         return {
             "project_id": project_id,
-            "model": __import__("os").getenv("GEMINI_MODEL_NAME", "gemini-flash-lite-latest"),
+            "model": model_meta.get("model", __import__("os").getenv("GEMINI_MODEL_NAME", "gemini-flash-lite-latest")),
+            "fallback_used": bool(model_meta.get("fallback_used", False)),
             "language": language,
             "retrieval_mode": retrieval.get("retrieval_mode"),
             "evidence_count": len(retrieval.get("results", [])),

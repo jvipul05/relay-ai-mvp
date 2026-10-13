@@ -3,6 +3,7 @@ import React from 'react';
 const titles = {
   overview: ['Project cockpit', 'A focused brief on delivery health and what to do next.'],
   portfolio: ['Portfolio overview', 'See which projects need attention first.'],
+  ripple: ['Ripple Intelligence', 'Detect change impacts, compare future scenarios, and learn from outcomes.'],
   investigation: ['AI investigation', 'Understand the signal, the cause, and the best next move.'],
   dependencies: ['Dependency map', 'See what is blocking progress and what gets unblocked next.'],
   actions: ['Recovery actions', 'Review, approve, and verify proposed actions in one place.'],

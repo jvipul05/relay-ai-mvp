@@ -15,6 +15,7 @@ import DependencyMapPage from './pages/DependencyMapPage';
 import DataSourcesPage from './pages/DataSourcesPage';
 import LoginPage from './pages/LoginPage';
 import RelayStudioPage from './pages/RelayStudioPage';
+import RippleIntelligencePage from './pages/RippleIntelligencePage';
 import './styles.css';
 
 const GUEST_SESSION_KEY = 'relay_demo_access';
@@ -28,6 +29,7 @@ const MOBILE_NAV_ITEMS = [
 ];
 
 const MOBILE_MORE_ITEMS = [
+  { id: 'ripple', icon: '⌁', label: 'Ripple Intelligence' },
   { id: 'relay-studio', icon: '✧', label: 'Relay Studio' },
   { id: 'dependencies', icon: '⤳', label: 'Dependency map' },
   { id: 'evidence', icon: '⌕', label: 'Evidence search' },
@@ -220,16 +222,30 @@ function RelayWorkspace({ onSignOut }) {
     return result;
   };
 
+
+  const createProject = async data => {
+    setError('');
+    const created = await relayApi.createProject(data);
+    const fresh = await relayApi.getProjects();
+    setProjects(fresh.projects || []);
+    setAiResult(null);
+    setSelectedProjectId(created.id);
+    setActiveView('overview');
+    showToast(`Created ${created.name}. Add evidence and run Ripple Intelligence to investigate it.`);
+    return created;
+  };
+
   if (loading) return <div className="app-loading"><LoadingState label="Connecting to Relay workspace…"/></div>;
   return <div className="app-shell">
     <Sidebar activeView={activeView} onNavigate={setActiveView} projects={projects} selectedProjectId={selectedProjectId} onSelectProject={setSelectedProjectId} onSignOut={onSignOut}/>
     <main className="main-area"><Topbar activeView={activeView} project={selectedProject} onRefresh={() => loadProjectData(selectedProjectId)} refreshing={refreshing} language={responseLanguage} onLanguageChange={setResponseLanguage}/>
       <div className="main-content">{error && <div className="error-banner"><span>!</span><div><strong>Something needs attention</strong><p>{error}</p></div><button onClick={() => setError('')} aria-label="Dismiss error">×</button></div>}
         {!projects.length ? <section className="panel"><div className="empty-state"><div className="empty-icon">⌂</div><h3>No projects yet</h3><p>Add a project through the backend seed script or project API. The UI automatically lists projects returned by the server.</p></div></section> : <>
-          {activeView === 'portfolio' && <PortfolioPage onOpenProject={id => { setSelectedProjectId(id); setActiveView('overview'); }}/>}
+          {activeView === 'portfolio' && <PortfolioPage onCreateProject={createProject} onOpenProject={id => { setSelectedProjectId(id); setActiveView('overview'); }}/>}
           {activeView === 'dependencies' && <DependencyMapPage project={project}/>}
           {activeView === 'chat' && <RagChatPage project={selectedProject} onChat={chatWithRag} language={responseLanguage}/>}
           {activeView === 'relay-studio' && <RelayStudioPage project={selectedProject} language={responseLanguage} onCreateAction={createStudioAction}/>}
+          {activeView === 'ripple' && <RippleIntelligencePage project={selectedProject} language={responseLanguage}/>}
           {activeView === 'overview' && <OverviewPage project={project} investigation={investigation} onNavigate={setActiveView} onRunAi={runAi} aiLoading={aiLoading}/>}
           {activeView === 'investigation' && <InvestigationPage project={project} investigation={investigation} aiResult={aiResult} aiLoading={aiLoading} onRunAi={runAi} onCreateAction={createActionFromAi}/>}
           {activeView === 'actions' && <ActionsPage project={project} actions={actions} onCreate={createAction} onApprove={id => withAction(id, () => relayApi.approveAction(selectedProjectId, id), 'Action approved.')} onExecute={id => withAction(id, () => relayApi.executeAction(selectedProjectId, id), 'Simulation executed.')} onVerify={id => withAction(id, () => relayApi.verifyAction(selectedProjectId, id), 'Action verified.')} busyActionId={busyActionId}/>}

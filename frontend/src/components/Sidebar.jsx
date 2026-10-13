@@ -6,6 +6,7 @@ const navGroups = [
     items: [
       { id: 'overview', icon: '⌂', label: 'Project cockpit' },
       { id: 'portfolio', icon: '▥', label: 'All projects' },
+      { id: 'ripple', icon: '⌁', label: 'Ripple Intelligence', highlight: true },
     ],
   },
   {
