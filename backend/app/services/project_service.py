@@ -32,12 +32,14 @@ def load_project_payload(db: Session, project_id: str) -> dict:
         "source": doc.source,
         "finding": doc.content,
         "related_task": doc.related_task_id,
+        "is_synthetic": bool(doc.is_synthetic),
     } for doc in repo.get_documents(db, project_id)]
 
     return {
         "id": project.project_id,
         "name": project.name,
         "status": project.status,
+        "is_synthetic": bool(project.is_synthetic),
         "planned_release": project.planned_release.isoformat(),
         "current_risk_score": project.risk_score,
         "tasks": task_payloads,

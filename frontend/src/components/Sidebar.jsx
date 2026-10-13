@@ -19,7 +19,8 @@ const navGroups = [
   {
     label: 'TAKE ACTION',
     items: [
-      { id: 'actions', icon: '✓', label: 'Recovery actions', highlight: true },
+      { id: 'relay-studio', icon: '✦', label: 'Relay Studio', highlight: true },
+      { id: 'actions', icon: '✓', label: 'Recovery actions' },
     ],
   },
   {
