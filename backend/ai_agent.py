@@ -1,6 +1,7 @@
 """Gemini adapters for multilingual, evidence-grounded structured outputs."""
 import json
 import os
+from time import perf_counter
 from typing import Literal
 
 from dotenv import load_dotenv
@@ -183,11 +184,17 @@ def generate_content_with_fallback(*, operation: str, contents, config: dict):
 
     last_error = None
     for index, model_name in enumerate(candidates):
+        model_started_at = perf_counter()
         try:
             response = gemini.models.generate_content(
                 model=model_name,
                 contents=contents,
                 config=config,
+            )
+            duration_ms = (perf_counter() - model_started_at) * 1000
+            print(
+                f"AI_CALL_TIMING operation={operation} model={model_name} "
+                f"status=success duration_ms={duration_ms:.1f}"
             )
             if index:
                 print(
@@ -197,6 +204,7 @@ def generate_content_with_fallback(*, operation: str, contents, config: dict):
             return response, model_name
         except Exception as exc:
             last_error = exc
+            duration_ms = (perf_counter() - model_started_at) * 1000
             status = _status_code(exc)
             # A configured fallback can itself be unavailable to this API key or have an
             # outdated model ID. Continue on model-specific NOT_FOUND errors, but not on
@@ -209,7 +217,7 @@ def generate_content_with_fallback(*, operation: str, contents, config: dict):
             print(
                 f"AI_MODEL_ERROR operation={operation} model={model_name} "
                 f"status={status or 'unknown'} retryable={retryable} "
-                f"error={type(exc).__name__}"
+                f"duration_ms={duration_ms:.1f} error={type(exc).__name__}"
             )
             if not retryable or index == len(candidates) - 1:
                 break
