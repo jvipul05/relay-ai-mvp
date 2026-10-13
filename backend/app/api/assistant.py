@@ -89,9 +89,14 @@ def project_graph(project_id: str, db: Session = Depends(get_db)):
 @portfolio_router.get("/portfolio")
 def portfolio(db: Session = Depends(get_db)):
     projects = db.query(ProjectRecord).order_by(ProjectRecord.name.asc()).all()
+    all_tasks = db.query(ProjectTask).all()
+    tasks_by_project: dict[str, list[ProjectTask]] = {}
+    for task in all_tasks:
+        tasks_by_project.setdefault(task.project_id, []).append(task)
+
     result = []
     for project in projects:
-        tasks = db.query(ProjectTask).filter(ProjectTask.project_id == project.project_id).all()
+        tasks = tasks_by_project.get(project.project_id, [])
         risk_tasks = sum(
             1 for task in tasks
             if str(task.status).strip().lower() in {"delayed", "blocked", "at risk", "atrisk"}
