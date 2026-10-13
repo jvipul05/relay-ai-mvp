@@ -15,6 +15,7 @@ import DependencyMapPage from './pages/DependencyMapPage';
 import DataSourcesPage from './pages/DataSourcesPage';
 import LoginPage from './pages/LoginPage';
 import RelayStudioPage from './pages/RelayStudioPage';
+import RippleIntelligencePage from './pages/RippleIntelligencePage';
 import './styles.css';
 
 const GUEST_SESSION_KEY = 'relay_demo_access';
@@ -28,6 +29,7 @@ const MOBILE_NAV_ITEMS = [
 ];
 
 const MOBILE_MORE_ITEMS = [
+  { id: 'ripple', icon: '⌁', label: 'Ripple Intelligence' },
   { id: 'relay-studio', icon: '✧', label: 'Relay Studio' },
   { id: 'dependencies', icon: '⤳', label: 'Dependency map' },
   { id: 'evidence', icon: '⌕', label: 'Evidence search' },
@@ -220,6 +222,19 @@ function RelayWorkspace({ onSignOut }) {
     return result;
   };
 
+
+  const createProject = async data => {
+    setError('');
+    const created = await relayApi.createProject(data);
+    const fresh = await relayApi.getProjects();
+    setProjects(fresh.projects || []);
+    setAiResult(null);
+    setSelectedProjectId(created.id);
+    setActiveView('overview');
+    showToast(`Created ${created.name}. Add evidence and run Ripple Intelligence to investigate it.`);
+    return created;
+  };
+
   if (loading) return <div className="app-loading"><LoadingState label="Connecting to Relay workspace…"/></div>;
   return <div className="app-shell">
     <Sidebar activeView={activeView} onNavigate={setActiveView} projects={projects} selectedProjectId={selectedProjectId} onSelectProject={setSelectedProjectId} onSignOut={onSignOut}/>
@@ -230,6 +245,7 @@ function RelayWorkspace({ onSignOut }) {
           {activeView === 'dependencies' && <DependencyMapPage project={project}/>}
           {activeView === 'chat' && <RagChatPage project={selectedProject} onChat={chatWithRag} language={responseLanguage}/>}
           {activeView === 'relay-studio' && <RelayStudioPage project={selectedProject} language={responseLanguage} onCreateAction={createStudioAction}/>}
+          {activeView === 'ripple' && <RippleIntelligencePage project={selectedProject} language={responseLanguage}/>}
           {activeView === 'overview' && <OverviewPage project={project} investigation={investigation} onNavigate={setActiveView} onRunAi={runAi} aiLoading={aiLoading}/>}
           {activeView === 'investigation' && <InvestigationPage project={project} investigation={investigation} aiResult={aiResult} aiLoading={aiLoading} onRunAi={runAi} onCreateAction={createActionFromAi}/>}
           {activeView === 'actions' && <ActionsPage project={project} actions={actions} onCreate={createAction} onApprove={id => withAction(id, () => relayApi.approveAction(selectedProjectId, id), 'Action approved.')} onExecute={id => withAction(id, () => relayApi.executeAction(selectedProjectId, id), 'Simulation executed.')} onVerify={id => withAction(id, () => relayApi.verifyAction(selectedProjectId, id), 'Action verified.')} busyActionId={busyActionId}/>}
