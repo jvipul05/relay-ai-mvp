@@ -241,7 +241,7 @@ function RelayWorkspace({ onSignOut }) {
     <main className="main-area"><Topbar activeView={activeView} project={selectedProject} onRefresh={() => loadProjectData(selectedProjectId)} refreshing={refreshing} language={responseLanguage} onLanguageChange={setResponseLanguage}/>
       <div className="main-content">{error && <div className="error-banner"><span>!</span><div><strong>Something needs attention</strong><p>{error}</p></div><button onClick={() => setError('')} aria-label="Dismiss error">×</button></div>}
         {!projects.length ? <section className="panel"><div className="empty-state"><div className="empty-icon">⌂</div><h3>No projects yet</h3><p>Add a project through the backend seed script or project API. The UI automatically lists projects returned by the server.</p></div></section> : <>
-          {activeView === 'portfolio' && <PortfolioPage onOpenProject={id => { setSelectedProjectId(id); setActiveView('overview'); }}/>}
+          {activeView === 'portfolio' && <PortfolioPage onCreateProject={createProject} onOpenProject={id => { setSelectedProjectId(id); setActiveView('overview'); }}/>}
           {activeView === 'dependencies' && <DependencyMapPage project={project}/>}
           {activeView === 'chat' && <RagChatPage project={selectedProject} onChat={chatWithRag} language={responseLanguage}/>}
           {activeView === 'relay-studio' && <RelayStudioPage project={selectedProject} language={responseLanguage} onCreateAction={createStudioAction}/>}
