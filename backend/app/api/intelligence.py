@@ -220,7 +220,7 @@ def analyze_ripple(request: RippleRequest, db: Session = Depends(get_db)):
             language=language,
         )
         print(
-            f"AI_STAGE_TIMING operation=ripple stage=postprocess "
+            f"AI_STAGE_TIMING operation=ripple stage=generation_and_validation "
             f"duration_ms={(perf_counter() - generation_started_at) * 1000:.1f}"
         )
         model_meta = analysis.pop("_relay_meta", {})
