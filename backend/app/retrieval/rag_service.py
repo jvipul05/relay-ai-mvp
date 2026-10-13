@@ -195,6 +195,7 @@ def retrieve_evidence(db: Session, project_id: str, query: str, top_k: int = 5) 
     query_vector = query_vectors[0] if query_vectors else None
     docs_by_id = {doc.document_id: doc for doc in db.query(ProjectDocument).filter(ProjectDocument.project_id == project_id).all()}
     scored = []
+    chunked_document_ids = {chunk.document_id for chunk in chunks}
     used_vectors = bool(query_vector) and any(vector_from_json(chunk.embedding_json) for chunk in chunks)
     for chunk in chunks:
         doc = docs_by_id.get(chunk.document_id)
@@ -206,5 +207,22 @@ def retrieve_evidence(db: Session, project_id: str, query: str, top_k: int = 5) 
             scored.append({"document_id": doc.document_id, "chunk_id": chunk.chunk_id,
                            "title": doc.title, "source": doc.source, "content": chunk.content,
                            "related_task_id": doc.related_task_id, "score": round(float(score), 4)})
+    # Newly created project briefs may not have embeddings/chunks yet. Keep these
+    # unchunked source documents retrievable instead of silently dropping them as the
+    # project acquires its first indexed connector document.
+    for document_id, doc in docs_by_id.items():
+        if document_id in chunked_document_ids:
+            continue
+        score = _keyword_score(query, doc.content)
+        if score > 0:
+            scored.append({
+                "document_id": doc.document_id,
+                "chunk_id": None,
+                "title": doc.title,
+                "source": doc.source,
+                "content": doc.content,
+                "related_task_id": doc.related_task_id,
+                "score": round(float(score), 4),
+            })
     scored.sort(key=lambda item: item["score"], reverse=True)
     return {"retrieval_mode": "embedding" if used_vectors else "keyword_fallback", "results": scored[:max(1, min(top_k, 10))]}
